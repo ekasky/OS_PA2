@@ -1,0 +1,19 @@
+# Object Files
+*.o
+*.ko
+*.obj
+
+# Library Files
+*.lib
+*.a
+*.la
+
+# Shared Objects
+*.dll
+*.so
+*.dylib
+
+# Executable Files
+*.exe
+*.out
+
