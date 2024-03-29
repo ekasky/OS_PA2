@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 /* Define data structs */
 
@@ -23,6 +24,7 @@ int main(void) {
 	const size_t bufferSize = 100;
 	char buffer[bufferSize];
 	Line* temp_line = NULL;
+	uint32_t num_threads = 0;
 
 	// Open the commands file in read mode
 	FILE* fp = open_file();
@@ -31,14 +33,17 @@ int main(void) {
 	// Loop through each line of the file
 	while(read_line(fp, buffer, bufferSize)) {
 		
+		// Extract the parameters from the line
 		temp_line = parse_line(buffer);
 		
-		printf("Command: %s\n", temp_line->command);
-		printf("Param One: %s\n", temp_line->param_one);
-		printf("Param Two: %s\n\n", temp_line->param_two);
+		// Run the command read from the line
+		if( strcmp(temp_line->command, "threads") == 0 ) {
+			num_threads = atoi(temp_line->param_one);		// Convert the number of threads to a int
+		}	
 		
 	}
 	
+	printf("Number of threads: %d\n", num_threads);
 	
 	// Close the commands.txt file
 	fclose(fp);
