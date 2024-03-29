@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stddef.h>
+#include "./includes/hashdb.h"
 
 /* Define data structs */
 
@@ -25,6 +27,7 @@ int main(void) {
 	char buffer[bufferSize];
 	Line* temp_line = NULL;
 	uint32_t num_threads = 0;
+	hashRecord* head = NULL;					// Point to the first node in the hash table list
 
 	// Open the commands file in read mode
 	FILE* fp = open_file();
@@ -44,6 +47,8 @@ int main(void) {
 	}
 	
 	printf("Number of threads: %d\n", num_threads);
+	printf("Hash: %x\n", jenkins_one_at_a_time_hash("a", 1));
+	printf("Hash: %x\n", jenkins_one_at_a_time_hash("Testing the hash function", 25));
 	
 	// Close the commands.txt file
 	fclose(fp);
@@ -143,7 +148,6 @@ Line* parse_line(char* buffer) {
 	
 	// Copy the second token to the parameter_one
 	line->param_two = strdup(token);	// This line used A.I to figure out how to allocate string effincently
-	
 	
 	return line;
 
