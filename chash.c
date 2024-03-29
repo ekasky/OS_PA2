@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include "./includes/test.h"
 
 /* Define data structs */
 
@@ -44,6 +45,9 @@ int main(void) {
 	}
 	
 	printf("Number of threads: %d\n", num_threads);
+	
+	// This is for testing the makefile. REMOVE
+	test();
 	
 	// Close the commands.txt file
 	fclose(fp);
