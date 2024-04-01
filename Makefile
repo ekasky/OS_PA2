@@ -1,7 +1,7 @@
 # I used the following link to write this makefile "https://www.gnu.org/software/make/manual/html_node/index.html#SEC_Contents" along with ChatGPT to write this Makefile
 
 CC = gcc
-CFLAGS = -Wall -Wextra -I$(INCLUDE_DIR)
+CFLAGS = -Wall -Wextra -I$(INCLUDE_DIR) -pthread
 
 # Directories
 SRC_DIR = src
@@ -29,10 +29,14 @@ $(BIN_DIR)/%.o: $(SRC_DIR)/%.c | $(BIN_DIR)
 
 # Link object files to executable
 $(EXE): $(OBJS) | $(OUT_DIR)
-	$(CC) $(OBJS) -o $@
+	$(CC) $(OBJS) -o $@ $(CFLAGS)
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 	
 $(OUT_DIR):
 	mkdir -p $(OUT_DIR)
+	
+clean:
+	rm -rf $(BIN_DIR)/*.o
+	rm -rf $(OUT_DIR)/*.out

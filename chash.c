@@ -6,6 +6,8 @@
 #include <pthread.h>
 #include "./includes/hashdb.h"
 #include "./includes/rwlocks.h"
+#include "./includes/common.h"
+#include "./includes/common_threads.h"
 
 /* Define data structs */
 
@@ -16,6 +18,25 @@ typedef struct Line {
 	char* param_two;
 
 } Line;
+
+
+
+void *reader(void *arg) {
+    rwlock_t *lock = (rwlock_t *)arg;
+    rwlock_acquire_readlock(lock);
+    printf("Reading...\n");
+    rwlock_release_readlock(lock);
+    return NULL;
+}
+
+// Function to simulate writing operation
+void *writer(void *arg) {
+    rwlock_t *lock = (rwlock_t *)arg;
+    rwlock_acquire_writelock(lock);
+    printf("Writing...\n");
+    rwlock_release_writelock(lock);
+    return NULL;
+}
 
 
 /* Function Prototypes */
