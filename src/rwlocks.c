@@ -49,10 +49,15 @@ void rwlock_release_readlock(rwlock_t *lock) {
 
 void rwlock_acquire_writelock(rwlock_t* lock) {
 
-	Sem_wait(&lock->writeLock);				//Waut until we have have aquired the writeLock
+	Sem_wait(&lock->writeLock);				//Wait until we have have aquired the writeLock
 
 }
 
+void void rwlock_relase_writelock(rwlock_t* lock) {
+
+	Sem_post(&lock->writeLock);				// Relase the write lock to allow other threads to accquire it for write
+
+}
 
 
 
