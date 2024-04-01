@@ -47,6 +47,12 @@ void rwlock_release_readlock(rwlock_t *lock) {
 
 }
 
+void rwlock_acquire_writelock(rwlock_t* lock) {
+
+	Sem_wait(&lock->writeLock);				//Waut until we have have aquired the writeLock
+
+}
+
 
 
 
