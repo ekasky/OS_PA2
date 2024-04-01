@@ -19,26 +19,6 @@ typedef struct Line {
 
 } Line;
 
-
-
-void *reader(void *arg) {
-    rwlock_t *lock = (rwlock_t *)arg;
-    rwlock_acquire_readlock(lock);
-    printf("Reading...\n");
-    rwlock_release_readlock(lock);
-    return NULL;
-}
-
-// Function to simulate writing operation
-void *writer(void *arg) {
-    rwlock_t *lock = (rwlock_t *)arg;
-    rwlock_acquire_writelock(lock);
-    printf("Writing...\n");
-    rwlock_release_writelock(lock);
-    return NULL;
-}
-
-
 /* Function Prototypes */
 FILE* open_file();
 int read_line(FILE* fp, char* buffer, size_t bufferSize);
@@ -68,28 +48,6 @@ int main(void) {
 			num_threads = atoi(temp_line->param_one);		// Convert the number of threads to a int
 		}	
 		
-	}
-	
-	// Testing (Will be removed)
-	printf("Number of threads: %d\n", num_threads);
-	printf("Hash: %x\n", jenkins_one_at_a_time_hash("a", 1));
-	printf("Hash: %x\n", jenkins_one_at_a_time_hash("Testing the hash function", 25));
-	
-	rwlock_t lock;
-	rwlock_init(&lock);
-	pthread_t readers[3], writers[3];
-	for(i = 0; i < 3; i++) {
-	
-		pthread_create(&readers[i], NULL, reader, &lock);
-		pthread_create(&writers[i], NULL, writer, &lock);
-	
-	}
-	
-	for(i = 0; i < 3; i++) {
-	
-		pthread_join(&readers[i], NULL);
-		pthread_join(&writers[i], NULL);
-	
 	}
 	
 	// Close the commands.txt file
