@@ -2,6 +2,8 @@
 #define __RW_LOCKS_H__
 
 #include <semaphore.h>
+#include "common.h"
+#include "common_threads.h"
 
 typedef struct rwlock_t {
 
@@ -12,5 +14,6 @@ typedef struct rwlock_t {
 } rwlock_t;
 
 void rwlock_init(rwlock_t* lock);
+void rwlock_acquire_readlock(rwlock_t* lock);
 
 #endif
