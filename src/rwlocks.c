@@ -5,7 +5,7 @@ I used the following link as a guide and resource when writing this code:
 	
 I also used ChatGPT 3.0-Turbo to help break down each function and understand what they do:
 	https://chat.openai.com/share/2daf80be-c504-4ad6-8c54-791f1e302a95
- */
+`*/
 
 #include "../includes/rwlocks.h"
 
@@ -31,3 +31,24 @@ void rwlock_acquire_readlock(rwlock_t* lock) {
 	Sem_post(&lock->lock);					// Release the lock to allow other threads to access crtical section
 
 }
+
+void rwlock_release_readlock(rwlock_t *lock) {
+
+	Sem_wait(&lock->lock);					// Wait until we have permission to enter the crtical section
+	lock->readers--;					// Subtract one from the readers count
+	
+	if(&lock->lock) {
+	
+		Sem_post(&lock->writeLock);			// Release the write lock to allow a writer to accquire write permissions 
+	
+	}
+	
+	Sem_post(&lock->lock);					// Release the lokc to allow other threads to access critcal section
+
+}
+
+
+
+
+
+
