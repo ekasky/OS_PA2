@@ -11,7 +11,7 @@ I also used ChatGPT 3.0-Turbo to help break down each function and understand wh
 
 void rwlock_init(rwlock_t* lock) {
 
-	lock->reader = 0;					// Sets the number of reads currently held in the lock to 0
+	lock->readers = 0;					// Sets the number of reads currently held in the lock to 0
 	Sem_init(&lock->lock, 1);				// Ensures multiple readers can access critcal section concurrently
 	Sem_init(&lock->writeLock, 1);				// Ensures only one writer can access the crtical session at a time
 
@@ -53,7 +53,7 @@ void rwlock_acquire_writelock(rwlock_t* lock) {
 
 }
 
-void void rwlock_relase_writelock(rwlock_t* lock) {
+void rwlock_relase_writelock(rwlock_t* lock) {
 
 	Sem_post(&lock->writeLock);				// Relase the write lock to allow other threads to accquire it for write
 

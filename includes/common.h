@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <assert.h>
+#include <stdlib.h>
 
 double GetTime() {
     struct timeval t;

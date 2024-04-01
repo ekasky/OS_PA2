@@ -3,7 +3,9 @@
 #include <string.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <pthread.h>
 #include "./includes/hashdb.h"
+#include "./includes/rwlocks.h"
 
 /* Define data structs */
 
@@ -26,6 +28,7 @@ int main(void) {
 	const size_t bufferSize = 100;
 	char buffer[bufferSize];
 	Line* temp_line = NULL;
+	uint32_t i = 0;
 	uint32_t num_threads = 0;
 	hashRecord* head = NULL;					// Point to the first node in the hash table list
 
@@ -46,9 +49,27 @@ int main(void) {
 		
 	}
 	
+	// Testing (Will be removed)
 	printf("Number of threads: %d\n", num_threads);
 	printf("Hash: %x\n", jenkins_one_at_a_time_hash("a", 1));
 	printf("Hash: %x\n", jenkins_one_at_a_time_hash("Testing the hash function", 25));
+	
+	rwlock_t lock;
+	rwlock_init(&lock);
+	pthread_t readers[3], writers[3];
+	for(i = 0; i < 3; i++) {
+	
+		pthread_create(&readers[i], NULL, reader, &lock);
+		pthread_create(&writers[i], NULL, writer, &lock);
+	
+	}
+	
+	for(i = 0; i < 3; i++) {
+	
+		pthread_join(&readers[i], NULL);
+		pthread_join(&writers[i], NULL);
+	
+	}
 	
 	// Close the commands.txt file
 	fclose(fp);
