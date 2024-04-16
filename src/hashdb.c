@@ -1,7 +1,7 @@
 #include "../includes/hashdb.h"
 
 /* https://en.wikipedia.org/wiki/Jenkins_hash_function */
-uint32_t jenkins_one_at_a_time_hash(const char* key, size_t length) {
+uint32_t jenkins_one_at_a_time_hash(const char* key, size_t length, size_t table_size) {
 
 	size_t i = 0;
 	uint32_t hash = 0;
@@ -16,6 +16,6 @@ uint32_t jenkins_one_at_a_time_hash(const char* key, size_t length) {
 	hash ^= hash >> 11;
 	hash += hash << 15;
 	
-	return hash;
+	return hash % table_size;
 	
 }

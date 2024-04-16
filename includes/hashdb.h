@@ -9,9 +9,9 @@ typedef struct hash_struct {
 	char name[50];
 	uint32_t salary;
 	struct hash_struct *next;
-} hashRecord;
+} hash_record_t;
 
 /* Function prototypes */
-uint32_t jenkins_one_at_a_time_hash(const char* key, size_t length);
+uint32_t jenkins_one_at_a_time_hash(const char* key, size_t length, size_t table_size);
 
 #endif
