@@ -22,6 +22,7 @@ hash_record_t** create_hash_table(size_t hash_table_size);
 void destory_hash_table(hash_record_t** ht, size_t hash_table_size);
 void insert(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key, uint32_t value);
 void delete(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key);
+hash_record_t* search(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key);
 void print_hash_table_console(hash_record_t** ht, size_t hash_table_size);
 
 #endif

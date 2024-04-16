@@ -160,6 +160,34 @@ void delete(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* ke
 
 }
 
+hash_record_t* search(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key) {
+
+	// Aquire read lock
+	// TODO: Fix read lock
+
+	// Compute the hash
+	uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key), hash_table_size);
+	hash_record_t* bucket = ht[hash];
+
+	while(bucket) {
+
+		if( strcmp(bucket->name, key) == 0 ) {
+
+			return bucket;
+
+		}
+
+		bucket = bucket->next;
+
+	}
+
+	// Release read lock
+	// TODO: Fix read lock
+
+	return NULL;
+
+}
+
 void print_hash_table_console(hash_record_t** ht, size_t hash_table_size) {
 
 	if(ht == NULL) {

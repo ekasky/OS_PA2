@@ -62,6 +62,13 @@ int main(void) {
 
 			delete(ht, HASH_TABLE_SIZE, lock, temp_line->param_one);
 
+		} else if( strcmp(temp_line->command, "search") == 0 ) {
+
+			hash_record_t* find = search(ht, HASH_TABLE_SIZE, lock, temp_line->param_one);
+
+			if(!find) printf("NULL\n");
+			else printf("FOUND: %s\n", find->name);
+
 		}
 
 		free_parsed_line(temp_line);	
