@@ -10,6 +10,7 @@
 #include "./includes/common_threads.h"
 
 #define LINE_BUFFER_SIZE 255
+#define HASH_TABLE_SIZE 10
 
 /* Define data structs */
 
@@ -32,6 +33,7 @@ int main(void) {
 	char buffer[LINE_BUFFER_SIZE];
 	Line* temp_line = NULL;
 	uint32_t num_threads = 0;
+	hash_record_t** ht = create_hash_table(HASH_TABLE_SIZE);
 
 	// Open the commands file in read mode
 	FILE* fp = open_file();
@@ -52,8 +54,9 @@ int main(void) {
 		
 	}
 	
-	// Close the commands.txt file
+	// Close the commands.txt file and free the hash table
 	fclose(fp);
+	destory_hash_table(ht, HASH_TABLE_SIZE);
 
 	return 0;
 }

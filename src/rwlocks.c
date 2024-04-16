@@ -58,7 +58,3 @@ void rwlock_release_writelock(rwlock_t* lock) {
 	Sem_post(&lock->writeLock);				// Relase the write lock to allow other threads to accquire it for write
 
 }
-
-
-
-
