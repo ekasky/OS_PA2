@@ -33,7 +33,7 @@ int main(void) {
 	char buffer[LINE_BUFFER_SIZE];
 	Line* temp_line = NULL;
 	uint32_t num_threads = 0;
-	//hashRecord** ht = create_hash_table(TABLE_SIZE);
+	hashRecord** ht = create_hash_table(TABLE_SIZE);
 
 	// Open the commands file in read mode
 	FILE* fp = open_file();
@@ -57,7 +57,7 @@ int main(void) {
 	
 	// Close the commands.txt file and free the hash table memory
 	fclose(fp);
-	//destroy_hash_table(ht, TABLE_SIZE);
+	destroy_hash_table(ht, TABLE_SIZE);
 
 	return 0;
 }
