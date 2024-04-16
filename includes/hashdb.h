@@ -21,5 +21,6 @@ hash_record_t* new_hash_record(uint32_t hash, char* name, uint32_t salary);
 hash_record_t** create_hash_table(size_t hash_table_size);
 void destory_hash_table(hash_record_t** ht, size_t hash_table_size);
 void insert(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key, uint32_t value);
+void print_hash_table_console(hash_record_t** ht, size_t hash_table_size);
 
 #endif

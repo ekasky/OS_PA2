@@ -110,3 +110,32 @@ void insert(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* ke
 	rwlock_release_write_lock(lock);
 
 }
+
+void print_hash_table_console(hash_record_t** ht, size_t hash_table_size) {
+
+	if(ht == NULL) {
+		printf("TABLE IS NULL\n");
+	}
+
+	printf("Hash Table\n");
+	printf("___________\n");
+
+	for(uint32_t i = 0; i < hash_table_size; i++) {
+
+		hash_record_t* bucket = ht[i];
+
+		printf("%.3d: ", i);
+		while(bucket) {
+
+			printf("%s -> ", bucket->name);
+			bucket = bucket->next;
+
+		}
+
+		printf("\n");
+
+	}
+
+	printf("\n\n");
+
+}
