@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <semaphore.h>
+#include <stdlib.h>
 #include "common_threads.h"
 
 typedef struct rwlock_t {
@@ -13,7 +14,7 @@ typedef struct rwlock_t {
 
 } rwlock_t;
 
-void rwlock_init(rwlock_t* lock);
+rwlock_t* rwlock_init();
 void rwlock_acquire_read_lock(rwlock_t* lock);
 void rwlock_release_read_lock(rwlock_t *lock);
 void rwlock_acquire_write_lock(rwlock_t* lock);

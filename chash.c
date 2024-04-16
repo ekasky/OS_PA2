@@ -33,7 +33,7 @@ int main(void) {
 	Line* temp_line = NULL;
 	uint32_t num_threads = 0;
 	hash_record_t** ht = create_hash_table(HASH_TABLE_SIZE);
-	rwlock_t* lock;
+	rwlock_t* lock = rwlock_init();
 
 	// Open the commands file in read mode
 	FILE* fp = open_file();
@@ -60,8 +60,9 @@ int main(void) {
 		
 	}
 	
-	// Close the commands.txt file and free the hash table
+	// Close the commands.txt file, free the lock, and free the hash table
 	fclose(fp);
+	free(lock);
 	destory_hash_table(ht, HASH_TABLE_SIZE);
 
 	return 0;

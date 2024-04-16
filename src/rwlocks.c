@@ -9,11 +9,22 @@ I also used ChatGPT 3.0-Turbo to help break down each function and understand wh
 
 #include "../includes/rwlocks.h"
 
-void rwlock_init(rwlock_t* lock) {
+rwlock_t* rwlock_init() {
+
+	rwlock_t* lock = (rwlock_t*)calloc(1, sizeof(rwlock_t));
+
+	if(!lock) {
+
+		fprintf(stderr, "[ERROR]: Could not allocate space for lock\n");
+		exit(1);
+
+	}
 
 	lock->readers = 0;					// Sets the number of reads currently held in the lock to 0
 	Sem_init(&lock->lock, 1);				// Ensures multiple readers can access critcal section concurrently
 	Sem_init(&lock->writeLock, 1);				// Ensures only one writer can access the crtical session at a time
+
+	return lock;
 
 }
 
