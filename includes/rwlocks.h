@@ -14,9 +14,9 @@ typedef struct rwlock_t {
 } rwlock_t;
 
 void rwlock_init(rwlock_t* lock);
-void rwlock_acquire_readlock(rwlock_t* lock);
-void rwlock_release_readlock(rwlock_t *lock);
-void rwlock_acquire_writelock(rwlock_t* lock);
-void rwlock_release_writelock(rwlock_t* lock);
+void rwlock_acquire_read_lock(rwlock_t* lock);
+void rwlock_release_read_lock(rwlock_t *lock);
+void rwlock_acquire_write_lock(rwlock_t* lock);
+void rwlock_release_write_lock(rwlock_t* lock);
 
 #endif

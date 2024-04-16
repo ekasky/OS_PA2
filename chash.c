@@ -5,7 +5,6 @@
 #include <stddef.h>
 #include <pthread.h>
 #include "./includes/hashdb.h"
-#include "./includes/rwlocks.h"
 #include "./includes/common.h"
 #include "./includes/common_threads.h"
 
@@ -34,6 +33,7 @@ int main(void) {
 	Line* temp_line = NULL;
 	uint32_t num_threads = 0;
 	hash_record_t** ht = create_hash_table(HASH_TABLE_SIZE);
+	rwlock_t* lock;
 
 	// Open the commands file in read mode
 	FILE* fp = open_file();
@@ -47,7 +47,13 @@ int main(void) {
 		
 		// Run the command read from the line
 		if( strcmp(temp_line->command, "threads") == 0 ) {
+
 			num_threads = atoi(temp_line->param_one);		// Convert the number of threads to a int
+
+		} else if( strcmp(temp_line->command, "insert") == 0 ) {
+
+			insert(ht, HASH_TABLE_SIZE, lock, temp_line->param_one, atoi(temp_line->param_two));
+
 		}
 
 		free_parsed_line(temp_line);	

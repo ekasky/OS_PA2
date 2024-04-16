@@ -20,6 +20,26 @@ uint32_t jenkins_one_at_a_time_hash(const char* key, size_t length, size_t table
 	
 }
 
+hash_record_t* new_hash_record(uint32_t hash, char* name, uint32_t salary) {
+
+	hash_record_t* hr = (hash_record_t*)calloc(1, sizeof(hash_record_t));
+
+	if(!hr) {
+
+		fprintf(stderr, "[ERROR]: Could not allocate space for hash record\n");
+		exit(1);
+
+	}
+
+	hr->hash = hash;
+	strcpy(hr->name, name);
+	hr->salary = salary;
+	hr->next = NULL;
+
+	return hr;
+
+}
+
 hash_record_t** create_hash_table(size_t hash_table_size) {
 
 	hash_record_t** ht = (hash_record_t**)calloc(hash_table_size, sizeof(hash_record_t*));
@@ -61,5 +81,32 @@ void destory_hash_table(hash_record_t** ht, size_t hash_table_size) {
 	}
 
 	free(ht);
+
+}
+
+void insert(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key, uint32_t value) {
+
+	// Aquire the write lock
+	rwlock_acquire_write_lock(lock);
+
+	// Compute the hash
+	uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key), hash_table_size);
+	hash_record_t* bucket = ht[hash];
+
+	// Insert to bucket
+
+	if(!bucket) {
+
+		bucket = new_hash_record(hash, key, value);
+		return;
+
+	}
+
+	hash_record_t* hr = new_hash_record(hash, key, value);
+	hr->next = bucket;
+	bucket = hr;
+
+	// Relase the write lock
+	rwlock_release_write_lock(lock);
 
 }

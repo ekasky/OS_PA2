@@ -17,7 +17,7 @@ void rwlock_init(rwlock_t* lock) {
 
 }
 
-void rwlock_acquire_readlock(rwlock_t* lock) {
+void rwlock_acquire_read_lock(rwlock_t* lock) {
 
 	Sem_wait(&lock->lock);					// Wait until we have permission to enter the critcal section
 	lock->readers++;					// Increment the number of reader counts by 1
@@ -32,7 +32,7 @@ void rwlock_acquire_readlock(rwlock_t* lock) {
 
 }
 
-void rwlock_release_readlock(rwlock_t *lock) {
+void rwlock_release_read_lock(rwlock_t *lock) {
 
 	Sem_wait(&lock->lock);					// Wait until we have permission to enter the crtical section
 	lock->readers--;					// Subtract one from the readers count
@@ -47,13 +47,13 @@ void rwlock_release_readlock(rwlock_t *lock) {
 
 }
 
-void rwlock_acquire_writelock(rwlock_t* lock) {
+void rwlock_acquire_write_lock(rwlock_t* lock) {
 
 	Sem_wait(&lock->writeLock);				//Wait until we have have aquired the writeLock
 
 }
 
-void rwlock_release_writelock(rwlock_t* lock) {
+void rwlock_release_write_lock(rwlock_t* lock) {
 
 	Sem_post(&lock->writeLock);				// Relase the write lock to allow other threads to accquire it for write
 
