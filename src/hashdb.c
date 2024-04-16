@@ -87,27 +87,27 @@ void destory_hash_table(hash_record_t** ht, size_t hash_table_size) {
 void insert(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key, uint32_t value) {
 
 	// Aquire the write lock
-	rwlock_acquire_write_lock(lock);
+	//rwlock_acquire_write_lock(lock);
 
 	// Compute the hash
 	uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key), hash_table_size);
-	hash_record_t* bucket = ht[hash];
+	hash_record_t** bucket = &ht[hash];
 
 	// Insert to bucket
 
-	if(!bucket) {
+	if(!(*bucket)) {
 
-		bucket = new_hash_record(hash, key, value);
+		*bucket = new_hash_record(hash, key, value);
 		return;
 
 	}
 
 	hash_record_t* hr = new_hash_record(hash, key, value);
-	hr->next = bucket;
-	bucket = hr;
+	hr->next = *bucket;
+	*bucket = hr;
 
 	// Relase the write lock
-	rwlock_release_write_lock(lock);
+	//rwlock_release_write_lock(lock);
 
 }
 

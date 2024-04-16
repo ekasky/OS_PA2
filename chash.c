@@ -52,7 +52,7 @@ int main(void) {
 
 		} else if( strcmp(temp_line->command, "insert") == 0 ) {
 
-			//insert(ht, HASH_TABLE_SIZE, lock, temp_line->param_one, atoi(temp_line->param_two));
+			insert(ht, HASH_TABLE_SIZE, lock, temp_line->param_one, atoi(temp_line->param_two));
 
 		} else if( strcmp(temp_line->command, "print") == 0 ) {
 
