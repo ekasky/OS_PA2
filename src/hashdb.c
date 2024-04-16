@@ -87,7 +87,7 @@ void destory_hash_table(hash_record_t** ht, size_t hash_table_size) {
 void insert(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key, uint32_t value) {
 
 	// Aquire the write lock
-	// TODO: Fix the write locks
+	rwlock_acquire_write_lock(lock);
 
 	// Compute the hash
 	uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key), hash_table_size);
@@ -98,6 +98,7 @@ void insert(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* ke
 	if(!(*bucket)) {
 
 		*bucket = new_hash_record(hash, key, value);
+		rwlock_release_write_lock(lock);
 		return;
 
 	}
@@ -107,21 +108,26 @@ void insert(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* ke
 	*bucket = hr;
 
 	// Relase the write lock
-	// TODO: Fix the write locks
+	rwlock_release_write_lock(lock);
 
 }
 
 void delete(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key) {
 
 	// Aquire the write lock
-	// TODO: fix the write lock
+	rwlock_acquire_write_lock(lock);
 
 	// Compute the hash for the key
 	uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key), hash_table_size);
 	hash_record_t** bucket = &ht[hash];
 	hash_record_t* prev = NULL;
 
-	if(!(*bucket)) return;
+	if(!(*bucket)) {
+
+		rwlock_acquire_read_lock(lock);
+		return;
+
+	}
 
 	// Find the key in the bucket
 	while(*bucket) {
@@ -133,13 +139,17 @@ void delete(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* ke
 	}
 
 	// If bucket is null it not in the table and return
-	if(!(*bucket)) return;
+	if(!(*bucket)) {
+		rwlock_release_write_lock(lock);
+		return;
+	}
 
 	// If prev is null and bucket is not its the only element
 	if((*bucket) && !prev) {
 
 		free(*bucket);
 		*bucket = NULL;
+		rwlock_release_write_lock(lock);
 		return;
 
 	}
@@ -149,6 +159,7 @@ void delete(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* ke
 
 		prev->next = (*bucket)->next;
 		free(*bucket);
+		rwlock_release_write_lock(lock);
 		return;
 
 	}
@@ -156,6 +167,7 @@ void delete(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* ke
 	prev->next = (*bucket)->next;
 	(*bucket)->next = NULL;
 	free(*bucket);
+	rwlock_release_write_lock(lock);
 
 
 }
@@ -163,7 +175,7 @@ void delete(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* ke
 hash_record_t* search(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key) {
 
 	// Aquire read lock
-	// TODO: Fix read lock
+	rwlock_acquire_read_lock(lock);
 
 	// Compute the hash
 	uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key), hash_table_size);
@@ -173,6 +185,7 @@ hash_record_t* search(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock
 
 		if( strcmp(bucket->name, key) == 0 ) {
 
+			rwlock_release_read_lock(lock);
 			return bucket;
 
 		}
@@ -182,7 +195,7 @@ hash_record_t* search(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock
 	}
 
 	// Release read lock
-	// TODO: Fix read lock
+	rwlock_release_read_lock(lock);
 
 	return NULL;
 
