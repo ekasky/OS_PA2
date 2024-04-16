@@ -9,6 +9,9 @@
 #include "./includes/common.h"
 #include "./includes/common_threads.h"
 
+#define LINE_BUFFER_SIZE 100
+#define TABLE_SIZE 10
+
 /* Define data structs */
 
 typedef struct Line {
@@ -23,22 +26,21 @@ typedef struct Line {
 FILE* open_file();
 int read_line(FILE* fp, char* buffer, size_t bufferSize);
 Line* parse_line(char* buffer);
+void free_parsed_line(Line* line);
 
 int main(void) {
 
-	const size_t bufferSize = 100;
-	char buffer[bufferSize];
+	char buffer[LINE_BUFFER_SIZE];
 	Line* temp_line = NULL;
-	uint32_t i = 0;
 	uint32_t num_threads = 0;
-	hashRecord* head = NULL;					// Point to the first node in the hash table list
+	//hashRecord** ht = create_hash_table(TABLE_SIZE);
 
 	// Open the commands file in read mode
 	FILE* fp = open_file();
 	
 	
 	// Loop through each line of the file
-	while(read_line(fp, buffer, bufferSize)) {
+	while(read_line(fp, buffer, LINE_BUFFER_SIZE)) {
 		
 		// Extract the parameters from the line
 		temp_line = parse_line(buffer);
@@ -46,12 +48,16 @@ int main(void) {
 		// Run the command read from the line
 		if( strcmp(temp_line->command, "threads") == 0 ) {
 			num_threads = atoi(temp_line->param_one);		// Convert the number of threads to a int
-		}	
+		}
+		
+		// Free The line buffer
+		free_parsed_line(temp_line);	
 		
 	}
 	
-	// Close the commands.txt file
+	// Close the commands.txt file and free the hash table memory
 	fclose(fp);
+	//destroy_hash_table(ht, TABLE_SIZE);
 
 	return 0;
 }
@@ -153,9 +159,14 @@ Line* parse_line(char* buffer) {
 
 }
 
+void free_parsed_line(Line* line) {
 
+	if(!line) return;
+	
+	free(line->command);
+	free(line->param_one);
+	free(line->param_two);
+	free(line);
 
-
-
-
+}
 
