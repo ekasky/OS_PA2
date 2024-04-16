@@ -87,7 +87,7 @@ void destory_hash_table(hash_record_t** ht, size_t hash_table_size) {
 void insert(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key, uint32_t value) {
 
 	// Aquire the write lock
-	//rwlock_acquire_write_lock(lock);
+	// TODO: Fix the write locks
 
 	// Compute the hash
 	uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key), hash_table_size);
@@ -107,7 +107,56 @@ void insert(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* ke
 	*bucket = hr;
 
 	// Relase the write lock
-	//rwlock_release_write_lock(lock);
+	// TODO: Fix the write locks
+
+}
+
+void delete(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key) {
+
+	// Aquire the write lock
+	// TODO: fix the write lock
+
+	// Compute the hash for the key
+	uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key), hash_table_size);
+	hash_record_t** bucket = &ht[hash];
+	hash_record_t* prev = NULL;
+
+	if(!(*bucket)) return;
+
+	// Find the key in the bucket
+	while(*bucket) {
+
+		if( strcmp((*bucket)->name, key) == 0 ) break;
+		prev = *bucket;
+		*bucket = (*bucket)->next;
+
+	}
+
+	// If bucket is null it not in the table and return
+	if(!(*bucket)) return;
+
+	// If prev is null and bucket is not its the only element
+	if((*bucket) && !prev) {
+
+		free(*bucket);
+		*bucket = NULL;
+		return;
+
+	}
+
+	// If its the last element in the list
+	if(!(*bucket)->next) {
+
+		prev->next = (*bucket)->next;
+		free(*bucket);
+		return;
+
+	}
+
+	prev->next = (*bucket)->next;
+	(*bucket)->next = NULL;
+	free(*bucket);
+
 
 }
 

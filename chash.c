@@ -58,6 +58,10 @@ int main(void) {
 
 			print_hash_table_console(ht, HASH_TABLE_SIZE);
 
+		} else if( strcmp(temp_line->command, "delete") == 0 ) {
+
+			delete(ht, HASH_TABLE_SIZE, lock, temp_line->param_one);
+
 		}
 
 		free_parsed_line(temp_line);	
