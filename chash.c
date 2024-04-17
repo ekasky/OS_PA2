@@ -36,6 +36,9 @@ typedef struct thread_args_t {
 
 } thread_args_t;
 
+// Create mutex lock for file reading -- I used chatGPT to help fix the input reading within the threads (https://chat.openai.com/share/6276eff2-19a2-4f4c-be44-7f00527a9630)
+pthread_mutex_t file_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 pthread_t* allocate_threads(size_t num_threads);
 
 
@@ -85,7 +88,16 @@ int main(void) {
         pthread_join(threads[i] ,NULL);
 
     }
-    
+
+    /*
+    for(uint32_t i = 0; i < num_threads; i++) {
+
+        fgets(buffer, BUFFER_SIZE, in_fp);
+        line = parse_line(buffer);
+        printf("%d: %s %s %s", i, line.command, line.param_one, line.param_two);
+
+    }
+    */
 
     // Close the input file
     fclose(in_fp);
@@ -240,9 +252,15 @@ void* hash_table_thread_function(void* arg) {
     char buffer[BUFFER_SIZE];
     line_t line;
 
+    // Lock the file access -- I used chatGPT to help fix the input reading within the threads (https://chat.openai.com/share/6276eff2-19a2-4f4c-be44-7f00527a9630)
+    pthread_mutex_lock(&file_mutex);
+
     // Read in the next line of the file
     fgets(buffer, BUFFER_SIZE, args->in_fp);
     line = parse_line(buffer);
+
+    // Unlock the file access -- -- I used chatGPT to help fix the input reading within the threads (https://chat.openai.com/share/6276eff2-19a2-4f4c-be44-7f00527a9630)
+    pthread_mutex_unlock(&file_mutex);
 
     // Perform correct operation
 
