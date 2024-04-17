@@ -1,4 +1,6 @@
 #include "rwlock.h"
+#include <assert.h>
+#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +20,7 @@ uint32_t jenkins_hash(const char* key) {
 	return hash;
 }
 
-#define MAPLEN 64
+#define MAPLEN 1
 #define NAMELEN 49
 
 typedef struct HashRecord {
@@ -119,14 +121,32 @@ void hashmap_delete(Hashmap* hashmap, const char* name) {
 	rwlock_release_writelock(&entry->rwlock);
 }
 
+Hashmap map;
+
+void* thread(void* arg) {
+	char* name = (char*)arg;
+
+	for (int i = 0; i < 1000000; i++) {
+		const uint32_t salary = rand();
+
+		hashmap_insert(&map, name, salary);
+		int64_t ret = hashmap_search(&map, name);
+		hashmap_delete(&map, name);
+
+		assert(ret >= 0);
+		assert(ret == salary);
+	}
+
+	return NULL;
+}
+
 int main() {
-	Hashmap map = hashmap_init();
+	map = hashmap_init();
 
-	hashmap_insert(&map, "John Doe", 1234);
-	int salary = hashmap_search(&map, "John Doe");
-	printf("%d\n", salary);
-
-	hashmap_delete(&map, "John Doe");
-	salary = hashmap_search(&map, "John Doe");
-	printf("%d\n", salary);
+	pthread_t t1;
+	pthread_t t2;
+	pthread_create(&t1, NULL, thread, "John");
+	pthread_create(&t2, NULL, thread, "Jane");
+	pthread_join(t1, NULL);
+	pthread_join(t2, NULL);
 }
