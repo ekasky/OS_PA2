@@ -2,26 +2,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <stddef.h>
 #include <pthread.h>
-#include "./includes/hashdb.h"
-#include "./includes/rwlocks.h"
-#include "./includes/common.h"
-#include "./includes/common_threads.h"
+#include "includes/rwlocks.h"
+#include "includes/hashdb.h"
 
+<<<<<<< HEAD
 #define LINE_BUFFER_SIZE 100
 #define TABLE_SIZE 10
 
 /* Define data structs */
+=======
+#define BUFFER_SIZE 255
+#define HASH_TABLE_SIZE 10
+>>>>>>> 1af4bf83a0327e95dfd862bcbe920319ab7a766d
 
-typedef struct Line {
+/* Parser */
 
-	char* command;
-	char* param_one;
-	char* param_two;
+typedef struct line_t {
 
-} Line;
+    char* command;
+    char* param_one;
+    char* param_two;
 
+<<<<<<< HEAD
 /* Function Prototypes */
 FILE* open_file();
 int read_line(FILE* fp, char* buffer, size_t bufferSize);
@@ -58,109 +61,215 @@ int main(void) {
 	// Close the commands.txt file and free the hash table memory
 	fclose(fp);
 	destroy_hash_table(ht, TABLE_SIZE);
+=======
+} line_t;
 
-	return 0;
+FILE* open_input_file();
+FILE* open_output_file();
+line_t parse_line(char* buffer);
+void free_line(line_t line);
+void* hash_table_thread_function(void* arg);
+
+/* Threads */
+
+typedef struct thread_args_t {
+
+    hash_record_t** hash_table;
+    rwlock_t* lock;
+    FILE* in_fp;
+    FILE* out_fp;
+
+} thread_args_t;
+
+// Create mutex lock for file reading -- I used chatGPT to help fix the input reading within the threads (https://chat.openai.com/share/6276eff2-19a2-4f4c-be44-7f00527a9630)
+pthread_mutex_t file_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+pthread_t* allocate_threads(size_t num_threads);
+
+
+/* Entry Point */
+
+int main(void) {
+
+    // Open input file for reading
+    FILE* in_fp = open_input_file();
+
+    // Create or open the output.txt file
+    FILE* out_fp = open_output_file();
+>>>>>>> 1af4bf83a0327e95dfd862bcbe920319ab7a766d
+
+    // Create a empty hash table
+    hash_record_t** hash_table = create_hash_table(HASH_TABLE_SIZE);
+
+    // Create a buffer to store a line read in from file
+    char buffer[BUFFER_SIZE];
+
+    // Read in the number of threads needed from the input file
+    fgets(buffer, BUFFER_SIZE, in_fp);
+    line_t line = parse_line(buffer);
+    uint32_t num_threads = atoi(line.param_one);
+    free_line(line);
+    
+    fprintf(out_fp, "Running %d threads\n", num_threads);
+
+    // Create hash table lock to protect reads and writes
+    rwlock_t* lock = rwlock_init();
+
+    // Create a variable to store the number of lock acquisitions and releases
+    int num_acquisitions = 0;
+    int num_releases = 0;
+
+    // Create thread args needed to run
+    thread_args_t thread_args = {.hash_table = hash_table, .in_fp = in_fp, .out_fp = out_fp, .lock = lock};
+
+    // Allocate space for the pthreads
+    pthread_t* threads = allocate_threads(num_threads);
+
+    // Run the threads
+    for(uint32_t i = 0; i < num_threads; i++) {
+
+        pthread_create(&threads[i], NULL, hash_table_thread_function, (void*)&thread_args);
+
+    }
+
+    // Wait for threads to finish
+    for(uint32_t i = 0; i < num_threads; i++) {
+
+        pthread_join(threads[i] ,NULL);
+
+    }
+
+    // Close the input file
+    fclose(in_fp);
+
+    // Close the output file
+    fclose(out_fp);
+
+    // Free the lock
+    free(lock);
+
+    // Free the threads
+    free(threads);
+
+    // Free the hash table
+    free_hash_table(hash_table, HASH_TABLE_SIZE);
+
+    return 0;
 }
 
+FILE* open_input_file() {
 
+    FILE* fp = fopen("commands.txt", "r");
 
-/* Function Definitions */
+    if(!fp) {
 
-FILE* open_file() {
+        fprintf(stderr, "[ERROR]: Could not open commands.txt file\n");
+        exit(1);
 
-	// Attempt to open the file in read mode (commads.txt)
-	FILE* fp = fopen("commands.txt", "r");
-	
-	// If the file cannot be open for found print a error and return a NULL ptr
-	if(fp == NULL) {
-	
-		perror("[ERROR]: Could not open 'commands.txt'");
-		exit(1);
-	
-	}
-	
-	return fp;
-	
+    }
+
+    return fp;
+ 
+}
+
+FILE* open_output_file() {
+
+    FILE* fp = fopen("output.txt", "w");
+
+    if(!fp) {
+
+        fprintf(stderr, "[ERROR]: Could not create or open the output.txt file\n");
+        exit(1);
+
+    }
+
+    return fp;
 
 }
 
-int read_line(FILE* fp, char* buffer, size_t bufferSize) {
+line_t parse_line(char* buffer) {
 
-	if( fgets(buffer, bufferSize, fp) != NULL ) {
-		return 1;			// Line read sucessfully
-	}
-	
-	else {
-		return 0;			// EOF encountered or error
-	}
-	
+    line_t line;
+
+    // Get the command parameter
+    char* token = strtok(buffer, ",");
+
+    if(!token) {
+
+        fprintf(stderr, "[ERROR]: Failed to tokenize input\n");
+        exit(1);
+
+    }
+
+    line.command = (char*)calloc(strlen(token), sizeof(char));
+
+    if(!line.command) {
+
+        fprintf(stderr, "[ERROR]: Could not allocate space for command\n");
+        exit(1);
+
+    }
+
+    strcpy(line.command, token);
+
+    // Get the parameter one
+    token = strtok(NULL, ",");
+
+    if(!token) {
+
+        fprintf(stderr, "[ERROR]: Failed to tokenize input\n");
+        exit(1);
+
+    }
+    
+    line.param_one = (char*)calloc(strlen(token), sizeof(char));
+
+    if(!line.param_one) {
+
+        fprintf(stderr, "[ERROR]: Could not allocate space for param_one\n");
+        exit(1);
+
+    }
+
+    strcpy(line.param_one, token);
+
+    // Get the parameter two
+    token = strtok(NULL, ",");
+
+    if(!token) {
+
+        fprintf(stderr, "[ERROR]: Failed to tokenize input\n");
+        exit(1);
+
+    }
+    
+    line.param_two = (char*)calloc(strlen(token), sizeof(char));
+
+    if(!line.param_two) {
+
+        fprintf(stderr, "[ERROR]: Could not allocate space for param_two\n");
+        exit(1);
+
+    }
+
+    strcpy(line.param_two, token);
+
+
+    return line;
+
 }
 
+void free_line(line_t line) {
 
-Line* parse_line(char* buffer) {
-
-	// Remove the new line character from the end of the line
-	buffer[strcspn(buffer, "\n")] = '\0';					// This line was A.I Generated
-
-	// Allocate memory for the line
-	Line* line = (Line*)malloc(sizeof(Line));
-	
-	// Print a error and exit if there is a memory allocation error
-	if(line == NULL) {
-	
-		perror("[ERROR]: Memory allocation error");
-		exit(1);
-	
-	}
-	
-	// Tokenize the line by commands
-	char* token = strtok(buffer, ",");
-	
-	if(token == NULL) {
-	
-		perror("[ERROR]: Could not tokenize string");
-		exit(1);
-	
-	}
-	
-	// Copy the first token to the command
-	line->command = strdup(token);		// This line used A.I to figure out how to allocate string effincently 
-	
-	
-	// Get the next parameter (token 2)
-	
-	token = strtok(NULL, ",");
-	
-	if(token == NULL) {
-	
-		perror("[ERROR]: Could not tokenize string");
-		exit(1);
-	
-	}
-	
-	// Copy the second token to the parameter_one
-	line->param_one = strdup(token);	// This line used A.I to figure out how to allocate string effincently
-	
-	// Get the next parameter (token 3)
-	
-	token = strtok(NULL, ",");
-	
-	if(token == NULL) {
-	
-		perror("[ERROR]: Could not tokenize string");
-		exit(1);
-	
-	}
-	
-	// Copy the second token to the parameter_one
-	line->param_two = strdup(token);	// This line used A.I to figure out how to allocate string effincently
-	
-	return line;
+    free(line.command);
+    free(line.param_one);
+    free(line.param_two);
 
 }
 
 void free_parsed_line(Line* line) {
 
+<<<<<<< HEAD
 	if(!line) return;
 	
 	free(line->command);
@@ -169,4 +278,63 @@ void free_parsed_line(Line* line) {
 	free(line);
 
 }
+=======
+pthread_t* allocate_threads(size_t num_threads) {
 
+    pthread_t* threads = (pthread_t*)calloc(num_threads, sizeof(pthread_t));
+
+    if(!threads) {
+
+        fprintf(stderr, "[ERROR]: Could not allocate space for threads\n");
+        exit(1);
+
+    }
+>>>>>>> 1af4bf83a0327e95dfd862bcbe920319ab7a766d
+
+    return threads;
+
+}
+
+void* hash_table_thread_function(void* arg) {
+
+    // Arguments
+    thread_args_t* args = (thread_args_t*)arg;
+
+    // Buffers
+    char buffer[BUFFER_SIZE];
+    line_t line;
+
+    // Lock the file access -- I used chatGPT to help fix the input reading within the threads (https://chat.openai.com/share/6276eff2-19a2-4f4c-be44-7f00527a9630)
+    pthread_mutex_lock(&file_mutex);
+
+    // Read in the next line of the file
+    fgets(buffer, BUFFER_SIZE, args->in_fp);
+    line = parse_line(buffer);
+
+    // Unlock the file access -- I used chatGPT to help fix the input reading within the threads (https://chat.openai.com/share/6276eff2-19a2-4f4c-be44-7f00527a9630)
+    pthread_mutex_unlock(&file_mutex);
+
+    // Perform correct operation
+
+    if( !strcmp(line.command, "insert") ) {
+        insert(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, atoi(line.param_two), args->out_fp);
+    }
+
+    else if( !strcmp(line.command, "delete") ) {
+        //delete(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp);
+    }
+
+    else if( !strcmp(line.command, "search") ) {
+        search(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp);
+    }
+
+    else if( !strcmp(line.command, "print") ) {
+        print(args->hash_table, HASH_TABLE_SIZE, args->lock, args->out_fp);
+    }
+
+    // Free line buffer
+    free_line(line);
+
+    return NULL;
+
+}

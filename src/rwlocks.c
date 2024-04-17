@@ -9,30 +9,43 @@ I also used ChatGPT 3.0-Turbo to help break down each function and understand wh
 
 #include "../includes/rwlocks.h"
 
-void rwlock_init(rwlock_t* lock) {
+rwlock_t* rwlock_init() {
 
-	lock->readers = 0;					// Sets the number of reads currently held in the lock to 0
-	Sem_init(&lock->lock, 1);				// Ensures multiple readers can access critcal section concurrently
+	rwlock_t* lock = (rwlock_t*)calloc(1, sizeof(rwlock_t));
+
+	if(!lock) {
+
+		fprintf(stderr, "[ERROR]: Could not allocate space for lock\n");
+		exit(1);
+
+	}
+
+	lock->readers = 0;							// Sets the number of reads currently held in the lock to 0
+	Sem_init(&lock->lock, 1);					// Ensures multiple readers can access critcal section concurrently
 	Sem_init(&lock->writeLock, 1);				// Ensures only one writer can access the crtical session at a time
+
+	return lock;
 
 }
 
-void rwlock_acquire_readlock(rwlock_t* lock) {
+void rwlock_acquire_read_lock(rwlock_t* lock, FILE* fp) {
 
 	Sem_wait(&lock->lock);					// Wait until we have permission to enter the critcal section
-	lock->readers++;					// Increment the number of reader counts by 1
+	lock->readers++;						// Increment the number of reader counts by 1
 	
 	if(lock->readers == 1) {
 	
 		Sem_wait(&lock->writeLock);			// If we are the first reader accquire the write lock to prevent other writers from entering the critcal section while readers are present (Prevent value from changing as a reader is obtaining it)
 	
 	}
+
+	fprintf(fp, "READ LOCK ACQUIRED\n");
 	
 	Sem_post(&lock->lock);					// Release the lock to allow other threads to access crtical section
 
 }
 
-void rwlock_release_readlock(rwlock_t *lock) {
+void rwlock_release_read_lock(rwlock_t *lock, FILE* fp) {
 
 	Sem_wait(&lock->lock);					// Wait until we have permission to enter the crtical section
 	lock->readers--;					// Subtract one from the readers count
@@ -42,23 +55,24 @@ void rwlock_release_readlock(rwlock_t *lock) {
 		Sem_post(&lock->writeLock);			// Release the write lock to allow a writer to accquire write permissions 
 	
 	}
+
+	fprintf(fp, "READ LOCK RELEASED\n");
 	
 	Sem_post(&lock->lock);					// Release the lokc to allow other threads to access critcal section
 
 }
 
-void rwlock_acquire_writelock(rwlock_t* lock) {
+void rwlock_acquire_write_lock(rwlock_t* lock, FILE* fp) {
 
 	Sem_wait(&lock->writeLock);				//Wait until we have have aquired the writeLock
+	fprintf(fp, "WRITE LOCK ACQUIRED\n");
 
 }
 
-void rwlock_release_writelock(rwlock_t* lock) {
+void rwlock_release_write_lock(rwlock_t* lock, FILE* fp) {
 
 	Sem_post(&lock->writeLock);				// Relase the write lock to allow other threads to accquire it for write
+	fprintf(fp, "WRITE LOCK RELEASED\n");
 
 }
-
-
-
 
