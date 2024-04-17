@@ -115,8 +115,6 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
 
     rwlock_release_write_lock(lock, fp, num_releases);
 
-
-
 }
 
 void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp, int* num_acquisitions, int* num_releases) {
@@ -229,7 +227,7 @@ void print(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, FILE* 
 
         while(temp) {
 
-            fprintf(fp, "%d,%s,%d\n", temp->hash, temp->name, temp->salary);
+            fprintf(fp, "%u,%s,%u\n", temp->hash, temp->name, temp->salary);
             temp = temp->next;
 
         }
