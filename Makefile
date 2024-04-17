@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -Wall -Wextra -pthread -fsanitize=thread,undefined -g
+CFLAGS := -Wall -Wextra -pthread -fsanitize=undefined -g
 
 .PHONY: all
 all: chash
