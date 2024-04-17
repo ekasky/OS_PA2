@@ -7,10 +7,10 @@
 #define STR(s) _str(s)
 #define _str(s) #s
 
-void record_print(FILE* stream, const HashRecord* record) {
+void record_print(const HashRecord* record) {
 	fprintf(
-		stream,
-		"%" PRIu32 ",%" STR(NAMELEN) "s,%" PRIu32 "\n",
+		LOG_OUTPUT,
+		"%" PRIu32 ",%s,%" PRIu32 "\n",
 		record->hash,
 		record->name,
 		record->salary
@@ -42,8 +42,8 @@ Hashmap hashmap_init() {
 	return map;
 }
 
-/// Returns a uint32_t salary or -1 if not found.
-int64_t hashmap_search(Hashmap* hashmap, const char* name) {
+// Returns -1 if not found.
+int hashmap_search(Hashmap* hashmap, const char* name, HashRecord* out) {
 	uint32_t hash = jenkins_hash(name);
 	int index = hash % MAPLEN;
 
@@ -51,17 +51,19 @@ int64_t hashmap_search(Hashmap* hashmap, const char* name) {
 	rwlock_acquire_readlock(&entry->rwlock);
 
 	const HashRecord* record = entry->record;
-	int64_t return_value = -1;
+	_Bool found = 0;
 	while (record != NULL) {
 		if (record->hash == hash) {
-			return_value = record->salary;
+			*out = *record;
+			out->next = NULL;
+			found = 1;
 			break;
 		}
 		record = record->next;
 	}
 
 	rwlock_release_readlock(&entry->rwlock);
-	return return_value;
+	return found ? 0 : -1;
 }
 
 void hashmap_insert(Hashmap* hashmap, const char* name, uint32_t salary) {
@@ -113,15 +115,21 @@ void hashmap_delete(Hashmap* hashmap, const char* name) {
 	rwlock_release_writelock(&entry->rwlock);
 }
 
-void hashmap_print(FILE* stream, Hashmap* hashmap, _Bool lock) {
+void hashmap_print(Hashmap* hashmap, _Bool lock) {
 	for (int i = 0; i < MAPLEN; i++) {
 		HashEntry* entry = &hashmap->table[i];
+
+		// Unsynchronized/nonatomic initial check. Races and tears are okay
+		// because we check again after locking.
+		if (entry->record == NULL)
+			continue;
+
 		if (lock)
 			rwlock_acquire_readlock(&entry->rwlock);
 
 		for (const HashRecord* record = entry->record; record != NULL;
 			 record = record->next) {
-			record_print(stream, record);
+			record_print(record);
 		}
 
 		if (lock)

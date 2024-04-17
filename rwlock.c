@@ -8,6 +8,7 @@ _Atomic unsigned long read_acquires = 0;
 _Atomic unsigned long read_releases = 0;
 _Atomic unsigned long write_acquires = 0;
 _Atomic unsigned long write_releases = 0;
+FILE* LOG_OUTPUT = NULL;
 
 void rwlock_init(rwlock_t* lock) {
 	lock->readers = 0;
@@ -23,7 +24,7 @@ void rwlock_acquire_readlock(rwlock_t* lock) {
 	Sem_post(&lock->lock);
 
 	read_acquires++;
-	puts("READ LOCK ACQUIRED");
+	fputs("READ LOCK ACQUIRED\n", LOG_OUTPUT);
 }
 
 void rwlock_release_readlock(rwlock_t* lock) {
@@ -34,19 +35,19 @@ void rwlock_release_readlock(rwlock_t* lock) {
 	Sem_post(&lock->lock);
 
 	read_releases++;
-	puts("READ LOCK RELEASED");
+	fputs("READ LOCK RELEASED\n", LOG_OUTPUT);
 }
 
 void rwlock_acquire_writelock(rwlock_t* lock) {
 	Sem_wait(&lock->writelock);
 
 	write_acquires++;
-	puts("WRITE LOCK ACQUIRED");
+	fputs("WRITE LOCK ACQUIRED\n", LOG_OUTPUT);
 }
 
 void rwlock_release_writelock(rwlock_t* lock) {
 	Sem_post(&lock->writelock);
 
 	write_releases++;
-	puts("WRITE LOCK RELEASED");
+	fputs("WRITE LOCK RELEASED\n", LOG_OUTPUT);
 }
