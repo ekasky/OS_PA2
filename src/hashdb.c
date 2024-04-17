@@ -86,7 +86,7 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
     // Compute the hash value
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
 
-    fprintf(fp, "INSERT, %d, %s, %d\n", hash, key, value);
+    fprintf(fp, "INSERT, %u, %s, %u\n", hash, key, value);
 
     // Aquire the write lock
     rwlock_acquire_write_lock(lock, fp, num_acquisitions);
@@ -111,7 +111,7 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
     record->next = bucket_head;
     hash_table[hash % table_size] = record;
 
-    fprintf(fp, "INSERT, %s, %d\n", key, value);
+    fprintf(fp, "INSERT, %s, %u\n", key, value);
 
     rwlock_release_write_lock(lock, fp, num_releases);
 
