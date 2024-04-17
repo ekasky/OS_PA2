@@ -6,7 +6,6 @@
 - [Author II]
 - [Author III]
 - [Testing]
-- [Testing]
 
 ## Installation
 
