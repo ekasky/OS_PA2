@@ -2,236 +2,273 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <stddef.h>
 #include <pthread.h>
-#include "./includes/hashdb.h"
-#include "./includes/common.h"
-#include "./includes/common_threads.h"
+#include "includes/rwlocks.h"
+#include "includes/hashdb.h"
 
-#define LINE_BUFFER_SIZE 255
+#define BUFFER_SIZE 255
 #define HASH_TABLE_SIZE 10
 
-/* Define data structs */
+/* Parser */
 
-typedef struct Line {
+typedef struct line_t {
 
-	char* command;
-	char* param_one;
-	char* param_two;
+    char* command;
+    char* param_one;
+    char* param_two;
 
-} Line;
+} line_t;
 
-typedef struct thread_args {
+FILE* open_input_file();
+FILE* open_output_file();
+line_t parse_line(char* buffer);
+void free_line(line_t line);
+void* hash_table_thread_function(void* arg);
 
-	FILE* fp;
-	rwlock_t* lock;
-	hash_record_t** hash_table;
+/* Threads */
 
+typedef struct thread_args_t {
+
+    hash_record_t** hash_table;
+    rwlock_t* lock;
+    FILE* in_fp;
+    FILE* out_fp;
 
 } thread_args_t;
 
-/* Function Prototypes */
-FILE* open_file();
-int read_line(FILE* fp, char* buffer, size_t bufferSize);
-Line* parse_line(char* buffer);
-void free_parsed_line(Line* line);
 pthread_t* allocate_threads(size_t num_threads);
-void* hash_table_thread_function(void* args);
+
+
+/* Entry Point */
 
 int main(void) {
 
-	// Buffers
-	char buffer[LINE_BUFFER_SIZE];
-	Line* temp_line = NULL;
+    // Open input file for reading
+    FILE* in_fp = open_input_file();
 
-	// Create the space needed for the hash table and set all to NULL
-	hash_record_t** ht = create_hash_table(HASH_TABLE_SIZE);
+    // Create or open the output.txt file
+    FILE* out_fp = open_output_file();
 
-	// Create the lock needed for the hash table
-	rwlock_t* lock = rwlock_init();
+    // Create a empty hash table
+    hash_record_t** hash_table = create_hash_table(HASH_TABLE_SIZE);
 
-	// Open the commands file in read mode
-	FILE* fp = open_file();
-	
-	// Allocate space for the threads
-	read_line(fp, buffer, LINE_BUFFER_SIZE);
-	temp_line = parse_line(buffer);
-	uint32_t num_threads = atoi(temp_line->param_one);
-	free_parsed_line(temp_line);
+    // Create a buffer to store a line read in from file
+    char buffer[BUFFER_SIZE];
 
-	pthread_t* threads = allocate_threads(num_threads);
+    // Read in the number of threads needed from the input file
+    fgets(buffer, BUFFER_SIZE, in_fp);
+    line_t line = parse_line(buffer);
+    uint32_t num_threads = atoi(line.param_one);
+    free_line(line);
+    
+    fprintf(out_fp, "Running %d threads\n", num_threads);
 
-	// Set arguments needed in the thread function
-	thread_args_t thread_args = {.fp = fp, .hash_table = ht, .lock = lock};
+    // Create hash table lock to protect reads and writes
+    rwlock_t* lock = rwlock_init();
 
-	// Create the threads
-	for(uint32_t i = 0; i < num_threads; i++) {
+    // Create thread args needed to run
+    thread_args_t thread_args = {.hash_table = hash_table, .in_fp = in_fp, .out_fp = out_fp, .lock = lock};
 
-		pthread_create(&threads[i], NULL, hash_table_thread_function, (void*)&thread_args);
+    // Allocate space for the pthreads
+    pthread_t* threads = allocate_threads(num_threads);
 
-	}
+    // Run the threads
+    for(uint32_t i = 0; i < num_threads; i++) {
 
-	// Wait for threads to finish
-	for(uint32_t i = 0; i < num_threads; i++) {
+        pthread_create(&threads[i], NULL, hash_table_thread_function, (void*)&thread_args);
 
-		pthread_join(threads[i], NULL);
+    }
 
-	}
-	
-	// Close the commands.txt file, free the lock, free the threads, and free the hash table
-	fclose(fp);
-	free(lock);
-	free(threads);
-	destory_hash_table(ht, HASH_TABLE_SIZE);
+    // Wait for threads to finish
+    for(uint32_t i = 0; i < num_threads; i++) {
 
-	return 0;
+        pthread_join(threads[i] ,NULL);
+
+    }
+    
+
+    // Close the input file
+    fclose(in_fp);
+
+    // Close the output file
+    fclose(out_fp);
+
+    // Free the lock
+    free(lock);
+
+    // Free the threads
+    free(threads);
+
+    // Free the hash table
+    free_hash_table(hash_table, HASH_TABLE_SIZE);
+
+    return 0;
 }
 
+FILE* open_input_file() {
 
+    FILE* fp = fopen("commands.txt", "r");
 
-/* Function Definitions */
+    if(!fp) {
 
-FILE* open_file() {
+        fprintf(stderr, "[ERROR]: Could not open commands.txt file\n");
+        exit(1);
 
-	// Attempt to open the file in read mode (commads.txt)
-	FILE* fp = fopen("commands.txt", "r");
-	
-	// If the file cannot be open for found print a error and return a NULL ptr
-	if(fp == NULL) {
-	
-		perror("[ERROR]: Could not open 'commands.txt'");
-		exit(1);
-	
-	}
-	
-	return fp;
-	
+    }
 
+    return fp;
+ 
 }
 
-int read_line(FILE* fp, char* buffer, size_t bufferSize) {
+FILE* open_output_file() {
 
-	if( fgets(buffer, bufferSize, fp) != NULL ) {
-		return 1;			// Line read sucessfully
-	}
-	
-	else {
-		return 0;			// EOF encountered or error
-	}
-	
-}
+    FILE* fp = fopen("output.txt", "w");
 
+    if(!fp) {
 
-Line* parse_line(char* buffer) {
+        fprintf(stderr, "[ERROR]: Could not create or open the output.txt file\n");
+        exit(1);
 
-	// Remove the new line character from the end of the line
-	buffer[strcspn(buffer, "\n")] = '\0';					// This line was A.I Generated
+    }
 
-	// Allocate memory for the line
-	Line* line = (Line*)malloc(sizeof(Line));
-	
-	// Print a error and exit if there is a memory allocation error
-	if(line == NULL) {
-	
-		perror("[ERROR]: Memory allocation error");
-		exit(1);
-	
-	}
-	
-	// Tokenize the line by commands
-	char* token = strtok(buffer, ",");
-	
-	if(token == NULL) {
-	
-		perror("[ERROR]: Could not tokenize string");
-		exit(1);
-	
-	}
-	
-	// Copy the first token to the command
-	line->command = strdup(token);		// This line used A.I to figure out how to allocate string effincently 
-	
-	
-	// Get the next parameter (token 2)
-	
-	token = strtok(NULL, ",");
-	
-	if(token == NULL) {
-	
-		perror("[ERROR]: Could not tokenize string");
-		exit(1);
-	
-	}
-	
-	// Copy the second token to the parameter_one
-	line->param_one = strdup(token);	// This line used A.I to figure out how to allocate string effincently
-	
-	// Get the next parameter (token 3)
-	
-	token = strtok(NULL, ",");
-	
-	if(token == NULL) {
-	
-		perror("[ERROR]: Could not tokenize string");
-		exit(1);
-	
-	}
-	
-	// Copy the second token to the parameter_one
-	line->param_two = strdup(token);	// This line used A.I to figure out how to allocate string effincently
-	
-	return line;
+    return fp;
 
 }
 
-void free_parsed_line(Line* line) {
+line_t parse_line(char* buffer) {
 
-	if(line == NULL) return;
+    line_t line;
 
-	free(line->command);
-	free(line->param_one);
-	free(line->param_two);
+    // Get the command parameter
+    char* token = strtok(buffer, ",");
 
-	free(line);
+    if(!token) {
+
+        fprintf(stderr, "[ERROR]: Failed to tokenize input\n");
+        exit(1);
+
+    }
+
+    line.command = (char*)calloc(strlen(token), sizeof(char));
+
+    if(!line.command) {
+
+        fprintf(stderr, "[ERROR]: Could not allocate space for command\n");
+        exit(1);
+
+    }
+
+    strcpy(line.command, token);
+
+    // Get the parameter one
+    token = strtok(NULL, ",");
+
+    if(!token) {
+
+        fprintf(stderr, "[ERROR]: Failed to tokenize input\n");
+        exit(1);
+
+    }
+    
+    line.param_one = (char*)calloc(strlen(token), sizeof(char));
+
+    if(!line.param_one) {
+
+        fprintf(stderr, "[ERROR]: Could not allocate space for param_one\n");
+        exit(1);
+
+    }
+
+    strcpy(line.param_one, token);
+
+    // Get the parameter two
+    token = strtok(NULL, ",");
+
+    if(!token) {
+
+        fprintf(stderr, "[ERROR]: Failed to tokenize input\n");
+        exit(1);
+
+    }
+    
+    line.param_two = (char*)calloc(strlen(token), sizeof(char));
+
+    if(!line.param_two) {
+
+        fprintf(stderr, "[ERROR]: Could not allocate space for param_two\n");
+        exit(1);
+
+    }
+
+    strcpy(line.param_two, token);
+
+
+    return line;
 
 }
+
+void free_line(line_t line) {
+
+    free(line.command);
+    free(line.param_one);
+    free(line.param_two);
+
+}
+
 
 pthread_t* allocate_threads(size_t num_threads) {
 
-	pthread_t* threads = (pthread_t*)calloc(num_threads, sizeof(pthread_t));
+    pthread_t* threads = (pthread_t*)calloc(num_threads, sizeof(pthread_t));
 
-	if(!threads) {
+    if(!threads) {
 
-		fprintf(stderr, "[ERROR]: Could not allocate space for pthreads\n");
-		exit(1);
+        fprintf(stderr, "[ERROR]: Could not allocate space for threads\n");
+        exit(1);
 
-	}
+    }
 
-	return threads;
+    return threads;
 
 }
 
-void* hash_table_thread_function(void* args) {
+void* hash_table_thread_function(void* arg) {
 
-	// Arguments
-	thread_args_t* thread_args = (thread_args_t*)args;
+    // Arguments
+    thread_args_t* args = (thread_args_t*)arg;
 
-	// Buffers
-	char buffer[LINE_BUFFER_SIZE];
-	Line* temp_line = NULL;
+    // Buffers
+    char buffer[BUFFER_SIZE];
+    line_t line;
 
-	// Read the current line
-	read_line(thread_args->fp, buffer, LINE_BUFFER_SIZE);
-	temp_line = parse_line(buffer);
+    // Read in the next line of the file
+    fgets(buffer, BUFFER_SIZE, args->in_fp);
+    line = parse_line(buffer);
 
-	if( !strcmp(temp_line->command, "insert") ) insert(thread_args->hash_table, HASH_TABLE_SIZE, thread_args->lock, temp_line->param_one, atoi(temp_line->param_two));
-	else if( !strcmp(temp_line->command, "delete") ) delete(thread_args->hash_table, HASH_TABLE_SIZE, thread_args->lock, temp_line->param_one);
-	else if( !strcmp(temp_line->command, "search") ) search(thread_args->hash_table, HASH_TABLE_SIZE, thread_args->lock, temp_line->param_one);
-	else if( !strcmp(temp_line->command, "print") ) print_hash_table_console(thread_args->hash_table, HASH_TABLE_SIZE);
+    // Perform correct operation
 
-	// Free the temp line
-	free_parsed_line(temp_line);
+    if( !strcmp(line.command, "insert") ) {
+        insert(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, atoi(line.param_two), args->out_fp);
+        //fprintf(args->out_fp, "INSERT\n");
+    }
 
+    else if( !strcmp(line.command, "delete") ) {
+        //delete(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp);
+        //fprintf(args->out_fp, "DELETE\n");
+    }
 
+    else if( !strcmp(line.command, "search") ) {
+        //search(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp);
+        //fprintf(args->out_fp, "SEARCH\n");
+    }
+
+    else if( !strcmp(line.command, "print") ) {
+        print(args->hash_table, HASH_TABLE_SIZE, args->lock, args->out_fp);
+        //fprintf(args->out_fp, "PRINT\n");
+    }
+
+    // Free line buffer
+    free_line(line);
+
+    return NULL;
 
 }

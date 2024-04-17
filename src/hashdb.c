@@ -1,231 +1,243 @@
 #include "../includes/hashdb.h"
 
-/* https://en.wikipedia.org/wiki/Jenkins_hash_function */
-uint32_t jenkins_one_at_a_time_hash(const char* key, size_t length, size_t table_size) {
+hash_record_t** create_hash_table(size_t table_size) {
 
-	size_t i = 0;
-	uint32_t hash = 0;
-	
-	while (i != length) {
-		hash += key[i++];
-		hash += hash << 10;
-		hash ^= hash >> 6;
-	}
-	
-	hash += hash << 3;
-	hash ^= hash >> 11;
-	hash += hash << 15;
-	
-	return hash % table_size;
-	
-}
+    hash_record_t** hash_table = (hash_record_t**)calloc(table_size, sizeof(hash_record_t*));
 
-hash_record_t* new_hash_record(uint32_t hash, char* name, uint32_t salary) {
+    if(!hash_table) {
 
-	hash_record_t* hr = (hash_record_t*)calloc(1, sizeof(hash_record_t));
+        fprintf(stderr, "[ERROR]: Could not allocate space for hash table\n");
+        exit(1);
 
-	if(!hr) {
+    }
 
-		fprintf(stderr, "[ERROR]: Could not allocate space for hash record\n");
-		exit(1);
+    for(uint32_t i = 0; i < table_size; i++) {
 
-	}
+        hash_table[i] = NULL;
 
-	hr->hash = hash;
-	strcpy(hr->name, name);
-	hr->salary = salary;
-	hr->next = NULL;
+    }
 
-	return hr;
+    return hash_table;
 
 }
 
-hash_record_t** create_hash_table(size_t hash_table_size) {
+void free_hash_table(hash_record_t** hash_table, size_t table_size) {
 
-	hash_record_t** ht = (hash_record_t**)calloc(hash_table_size, sizeof(hash_record_t*));
+    for(uint32_t i = 0; i < table_size; i++) {
 
-	if(!ht) {
+        hash_record_t* temp = hash_table[i];
+        hash_record_t* prev = NULL;
 
-		fprintf(stderr, "[ERROR]: Could not allocate space for hash table\n");
-		exit(1);
+        while(temp) {
 
-	}
+            prev = temp;
+            temp = temp->next;
+            free(prev);
 
-	for(uint32_t i = 0; i < hash_table_size; i++) {
+        }
 
-		ht[i] = NULL;
+    }
 
-	}
-
-	return ht;
-
-}
-
-void destory_hash_table(hash_record_t** ht, size_t hash_table_size) {
-
-	if(!ht) return;
-
-	for(uint32_t i = 0; i < hash_table_size; i++) {
-
-		hash_record_t* temp = ht[i];
-		hash_record_t* prev = NULL;
-
-		while(temp) {
-
-			prev = temp;
-			temp = temp->next;
-			free(prev);
-
-		}
-
-	}
-
-	free(ht);
+    free(hash_table);
 
 }
 
-void insert(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key, uint32_t value) {
+uint32_t jenkins_one_at_a_time_hash(const char* key, size_t length) {
 
-	// Aquire the write lock
-	rwlock_acquire_write_lock(lock);
+    size_t i = 0;
+    uint32_t hash = 0;
 
-	// Compute the hash
-	uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key), hash_table_size);
-	hash_record_t** bucket = &ht[hash];
+    while (i != length) {
+        hash += key[i++];
+        hash += hash << 10;
+        hash ^= hash >> 6;
+    }
 
-	// Insert to bucket
+    hash += hash << 3;
+    hash ^= hash >> 11;
+    hash += hash << 15;
 
-	if(!(*bucket)) {
-
-		*bucket = new_hash_record(hash, key, value);
-		rwlock_release_write_lock(lock);
-		return;
-
-	}
-
-	hash_record_t* hr = new_hash_record(hash, key, value);
-	hr->next = *bucket;
-	*bucket = hr;
-
-	// Relase the write lock
-	rwlock_release_write_lock(lock);
+    return hash;
 
 }
 
-void delete(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key) {
+hash_record_t* create_hash_record(uint32_t hash, char* name, uint32_t salary) {
 
-	// Aquire the write lock
-	rwlock_acquire_write_lock(lock);
+    hash_record_t* record = (hash_record_t*)calloc(1, sizeof(hash_record_t));
 
-	// Compute the hash for the key
-	uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key), hash_table_size);
-	hash_record_t** bucket = &ht[hash];
-	hash_record_t* prev = NULL;
+    if(!record) {
 
-	if(!(*bucket)) {
+        fprintf(stderr, "[ERROR]: Could not allocate space for record\n");
+        exit(1);
 
-		rwlock_acquire_read_lock(lock);
-		return;
+    }
 
-	}
+    record->hash = hash;
+    strcpy(record->name, name);
+    record->salary = salary;
+    record->next = NULL;
 
-	// Find the key in the bucket
-	while(*bucket) {
+    return record;
 
-		if( strcmp((*bucket)->name, key) == 0 ) break;
-		prev = *bucket;
-		*bucket = (*bucket)->next;
+}
 
-	}
+void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, uint32_t value, FILE* fp) {
 
-	// If bucket is null it not in the table and return
-	if(!(*bucket)) {
-		rwlock_release_write_lock(lock);
-		return;
-	}
+    // Aquire the write lock
+    rwlock_acquire_write_lock(lock, fp);
 
-	// If prev is null and bucket is not its the only element
-	if((*bucket) && !prev) {
+    // Compute the hash value
+    uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
 
-		free(*bucket);
-		*bucket = NULL;
-		rwlock_release_write_lock(lock);
-		return;
+    // Create a reference to the correct bucket corresponsing to the hash
+    hash_record_t* bucket_head = hash_table[hash % table_size];
 
-	}
+    // Insert the new record into the bucket
 
-	// If its the last element in the list
-	if(!(*bucket)->next) {
+    if(!bucket_head) {
 
-		prev->next = (*bucket)->next;
-		free(*bucket);
-		rwlock_release_write_lock(lock);
-		return;
+        bucket_head = create_hash_record(hash, key, value);
+        
+        fprintf(fp, "INSERT, %s, %d\n", key, value);
 
-	}
+        rwlock_release_write_lock(lock, fp);
 
-	prev->next = (*bucket)->next;
-	(*bucket)->next = NULL;
-	free(*bucket);
-	rwlock_release_write_lock(lock);
+        return;
+
+    }
+
+    hash_record_t* record = create_hash_record(hash, key, value);
+    
+    record->next = bucket_head;
+    bucket_head = record;
+
+    fprintf(fp, "INSERT, %s, %d\n", key, value);
+
+    rwlock_release_write_lock(lock, fp);
+
 
 
 }
 
-hash_record_t* search(hash_record_t** ht, size_t hash_table_size, rwlock_t* lock, char* key) {
+void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp) {
 
-	// Aquire read lock
-	rwlock_acquire_read_lock(lock);
+    // Aquire the write lock
+    rwlock_acquire_write_lock(lock, fp);
 
-	// Compute the hash
-	uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key), hash_table_size);
-	hash_record_t* bucket = ht[hash];
+    // Compute the hash
+    uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
 
-	while(bucket) {
+    // Create a reference to the correct bucket
+    hash_record_t* bucket_head = hash_table[hash % table_size];
 
-		if( strcmp(bucket->name, key) == 0 ) {
+    // Remove node from the table
 
-			rwlock_release_read_lock(lock);
-			return bucket;
+    if(!bucket_head) {
+        
+        rwlock_release_write_lock(lock, fp);
+        return;
 
-		}
+    }
 
-		bucket = bucket->next;
+    hash_record_t* temp = bucket_head;
+    hash_record_t* prev = NULL;
 
-	}
+    while(temp) {
 
-	// Release read lock
-	rwlock_release_read_lock(lock);
+        if( !strcmp(temp->name, key) ) break;
+        prev = temp;
+        temp = temp->next;
 
-	return NULL;
+    }
+
+    if(!temp) {
+
+        rwlock_release_write_lock(lock, fp);
+        return;
+
+    }
+
+    if(!temp->next) {
+
+        free(temp);
+        prev->next = NULL;
+
+        fprintf(fp, "DELETE, %s", key);
+        rwlock_release_write_lock(lock, fp);
+        return;
+
+    }
+
+    prev->next = temp->next;
+    temp->next = NULL;
+
+    free(temp);
+
+    fprintf(fp, "DELETE, %s", key);
+    rwlock_release_write_lock(lock, fp);
 
 }
 
-void print_hash_table_console(hash_record_t** ht, size_t hash_table_size) {
+hash_record_t* search(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp) {
 
-	if(ht == NULL) {
-		printf("TABLE IS NULL\n");
-	}
+    // Aquire the read lock
+    rwlock_acquire_read_lock(lock, fp);
 
-	printf("Hash Table\n");
-	printf("___________\n");
+    // Compute the hash
+    uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
 
-	for(uint32_t i = 0; i < hash_table_size; i++) {
+    // Create a refrence to the bucket
+    hash_record_t* bucket_head = hash_table[hash % table_size];
 
-		hash_record_t* bucket = ht[i];
+    // Find the record in the table
+    if(!bucket_head) {
 
-		printf("%.3d: ", i);
-		while(bucket) {
+        rwlock_release_read_lock(lock, fp);
+        return NULL;
 
-			printf("%s -> ", bucket->name);
-			bucket = bucket->next;
+    }
 
-		}
+    hash_record_t* temp = bucket_head;
 
-		printf("\n");
+    while(temp) {
 
-	}
+        if( !strcmp(temp->name, key) ) break;
+        temp = temp->next;
 
-	printf("\n\n");
+    }
+
+    if(!temp) {
+
+        rwlock_release_read_lock(lock, fp);
+        return NULL;
+
+    }
+
+    fprintf(fp, "SEARCH, %s\n", key);
+    rwlock_release_read_lock(lock, fp);
+
+    return temp;
+
+}
+
+void print(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, FILE* fp) {
+
+    // Aquire the read lock
+    rwlock_acquire_read_lock(lock, fp);
+
+    for(uint32_t i = 0; i < table_size; i++) {
+
+        hash_record_t* temp = hash_table[i];
+
+        while(temp) {
+
+            fprintf(fp, "%d,%s,%d\n", temp->hash, temp->name, temp->salary);
+            temp = temp->next;
+
+        }
+
+    }
+
+    rwlock_release_read_lock(lock, fp);
 
 }
