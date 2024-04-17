@@ -12,7 +12,7 @@ run: chash
 clean:
 	rm -f chash *.o
 
-chash: chash.o rwlock.o
+chash: chash.o rwlock.o hashdb.o
 	$(CC) $(CFLAGS) -o $@ *.o
 
 %.o: %.c

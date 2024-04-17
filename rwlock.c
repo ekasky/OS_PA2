@@ -1,20 +1,13 @@
+#include "rwlock.h"
+#include "common_threads.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>
-
-#include "common.h"
-#include "common_threads.h"
 
 _Atomic unsigned long read_acquires = 0;
 _Atomic unsigned long read_releases = 0;
 _Atomic unsigned long write_acquires = 0;
 _Atomic unsigned long write_releases = 0;
-
-typedef struct _rwlock_t {
-	sem_t writelock;
-	sem_t lock;
-	int readers;
-} rwlock_t;
 
 void rwlock_init(rwlock_t* lock) {
 	lock->readers = 0;
