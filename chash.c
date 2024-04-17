@@ -26,6 +26,7 @@ FILE* open_file();
 int read_line(FILE* fp, char* buffer, size_t bufferSize);
 Line* parse_line(char* buffer);
 void free_parsed_line(Line* line);
+pthread_t* allocate_threads(size_t num_threads);
 
 int main(void) {
 
@@ -38,7 +39,22 @@ int main(void) {
 	// Open the commands file in read mode
 	FILE* fp = open_file();
 	
-	
+	// Allocate space for the threads
+	read_line(fp, buffer, LINE_BUFFER_SIZE);
+	temp_line = parse_line(buffer);
+	num_threads = atoi(temp_line->param_one);
+	free_parsed_line(temp_line);
+
+	pthread_t* threads = allocate_threads(num_threads);
+
+	// Create the threads
+	for(uint32_t i = 0; i < num_threads; i++) {
+
+		
+
+	}
+
+	/*
 	// Loop through each line of the file
 	while(read_line(fp, buffer, LINE_BUFFER_SIZE)) {
 		
@@ -46,11 +62,7 @@ int main(void) {
 		temp_line = parse_line(buffer);
 		
 		// Run the command read from the line
-		if( strcmp(temp_line->command, "threads") == 0 ) {
-
-			num_threads = atoi(temp_line->param_one);		// Convert the number of threads to a int
-
-		} else if( strcmp(temp_line->command, "insert") == 0 ) {
+		if( strcmp(temp_line->command, "insert") == 0 ) {
 
 			insert(ht, HASH_TABLE_SIZE, lock, temp_line->param_one, atoi(temp_line->param_two));
 
@@ -74,10 +86,12 @@ int main(void) {
 		free_parsed_line(temp_line);	
 		
 	}
+	*/
 	
-	// Close the commands.txt file, free the lock, and free the hash table
+	// Close the commands.txt file, free the lock, free the threads, and free the hash table
 	fclose(fp);
 	free(lock);
+	free(threads);
 	destory_hash_table(ht, HASH_TABLE_SIZE);
 
 	return 0;
@@ -189,5 +203,20 @@ void free_parsed_line(Line* line) {
 	free(line->param_two);
 
 	free(line);
+
+}
+
+pthread_t* allocate_threads(size_t num_threads) {
+
+	pthread_t* threads = (pthread_t*)calloc(num_threads, sizeof(pthread_t));
+
+	if(!threads) {
+
+		fprintf(stderr, "[ERROR]: Could not allocate space for pthreads\n");
+		exit(1);
+
+	}
+
+	return threads;
 
 }
