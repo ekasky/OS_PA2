@@ -1,7 +1,21 @@
 #include "hashdb.h"
-#include <stdio.h>
+#include "rwlock.h"
 #include <stdlib.h>
 #include <string.h>
+
+// Used to stringify defined numbers
+#define STR(s) _str(s)
+#define _str(s) #s
+
+void record_print(FILE* stream, const HashRecord* record) {
+	fprintf(
+		stream,
+		"%" PRIu32 ",%" STR(NAMELEN) "s,%" PRIu32 "\n",
+		record->hash,
+		record->name,
+		record->salary
+	);
+}
 
 // https://en.wikipedia.org/wiki/Jenkins_hash_function
 uint32_t jenkins_hash(const char* key) {
@@ -97,4 +111,20 @@ void hashmap_delete(Hashmap* hashmap, const char* name) {
 	}
 
 	rwlock_release_writelock(&entry->rwlock);
+}
+
+void hashmap_print(FILE* stream, Hashmap* hashmap, _Bool lock) {
+	for (int i = 0; i < MAPLEN; i++) {
+		HashEntry* entry = &hashmap->table[i];
+		if (lock)
+			rwlock_acquire_readlock(&entry->rwlock);
+
+		for (const HashRecord* record = entry->record; record != NULL;
+			 record = record->next) {
+			record_print(stream, record);
+		}
+
+		if (lock)
+			rwlock_release_readlock(&entry->rwlock);
+	}
 }

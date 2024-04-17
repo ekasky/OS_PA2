@@ -1,6 +1,7 @@
 #pragma once
 #include "rwlock.h"
 #include <inttypes.h>
+#include <stdio.h>
 
 #define MAPLEN 64
 #define NAMELEN 49
@@ -21,8 +22,10 @@ typedef struct Hashmap {
 	HashEntry table[MAPLEN];
 } Hashmap;
 
+void record_print(FILE* stream, const HashRecord* record);
 uint32_t jenkins_hash(const char* key);
 Hashmap hashmap_init();
 int64_t hashmap_search(Hashmap* hashmap, const char* name);
 void hashmap_insert(Hashmap* hashmap, const char* name, uint32_t salary);
 void hashmap_delete(Hashmap* hashmap, const char* name);
+void hashmap_print(FILE* stream, Hashmap* hashmap, _Bool lock);
