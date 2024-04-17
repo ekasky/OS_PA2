@@ -96,7 +96,7 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
 
     if(!bucket_head) {
 
-        bucket_head = create_hash_record(hash, key, value);
+        hash_table[hash % table_size] = create_hash_record(hash, key, value);
         
         fprintf(fp, "INSERT, %s, %d\n", key, value);
 
@@ -109,7 +109,7 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
     hash_record_t* record = create_hash_record(hash, key, value);
     
     record->next = bucket_head;
-    bucket_head = record;
+    hash_table[hash % table_size] = record;
 
     fprintf(fp, "INSERT, %s, %d\n", key, value);
 

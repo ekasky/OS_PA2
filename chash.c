@@ -69,6 +69,10 @@ int main(void) {
     // Create hash table lock to protect reads and writes
     rwlock_t* lock = rwlock_init();
 
+    // Create a variable to store the number of lock acquisitions and releases
+    int num_acquisitions = 0;
+    int num_releases = 0;
+
     // Create thread args needed to run
     thread_args_t thread_args = {.hash_table = hash_table, .in_fp = in_fp, .out_fp = out_fp, .lock = lock};
 
@@ -88,16 +92,6 @@ int main(void) {
         pthread_join(threads[i] ,NULL);
 
     }
-
-    /*
-    for(uint32_t i = 0; i < num_threads; i++) {
-
-        fgets(buffer, BUFFER_SIZE, in_fp);
-        line = parse_line(buffer);
-        printf("%d: %s %s %s", i, line.command, line.param_one, line.param_two);
-
-    }
-    */
 
     // Close the input file
     fclose(in_fp);
@@ -259,29 +253,25 @@ void* hash_table_thread_function(void* arg) {
     fgets(buffer, BUFFER_SIZE, args->in_fp);
     line = parse_line(buffer);
 
-    // Unlock the file access -- -- I used chatGPT to help fix the input reading within the threads (https://chat.openai.com/share/6276eff2-19a2-4f4c-be44-7f00527a9630)
+    // Unlock the file access -- I used chatGPT to help fix the input reading within the threads (https://chat.openai.com/share/6276eff2-19a2-4f4c-be44-7f00527a9630)
     pthread_mutex_unlock(&file_mutex);
 
     // Perform correct operation
 
     if( !strcmp(line.command, "insert") ) {
         insert(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, atoi(line.param_two), args->out_fp);
-        //fprintf(args->out_fp, "INSERT\n");
     }
 
     else if( !strcmp(line.command, "delete") ) {
         //delete(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp);
-        //fprintf(args->out_fp, "DELETE\n");
     }
 
     else if( !strcmp(line.command, "search") ) {
-        //search(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp);
-        //fprintf(args->out_fp, "SEARCH\n");
+        search(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp);
     }
 
     else if( !strcmp(line.command, "print") ) {
         print(args->hash_table, HASH_TABLE_SIZE, args->lock, args->out_fp);
-        //fprintf(args->out_fp, "PRINT\n");
     }
 
     // Free line buffer
