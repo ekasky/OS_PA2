@@ -21,19 +21,33 @@ typedef struct Line {
 
 } Line;
 
+typedef struct thread_args {
+
+	FILE* fp;
+	rwlock_t* lock;
+	hash_record_t** hash_table;
+
+
+} thread_args_t;
+
 /* Function Prototypes */
 FILE* open_file();
 int read_line(FILE* fp, char* buffer, size_t bufferSize);
 Line* parse_line(char* buffer);
 void free_parsed_line(Line* line);
 pthread_t* allocate_threads(size_t num_threads);
+void* hash_table_thread_function(void* args);
 
 int main(void) {
 
+	// Buffers
 	char buffer[LINE_BUFFER_SIZE];
 	Line* temp_line = NULL;
-	uint32_t num_threads = 0;
+
+	// Create the space needed for the hash table and set all to NULL
 	hash_record_t** ht = create_hash_table(HASH_TABLE_SIZE);
+
+	// Create the lock needed for the hash table
 	rwlock_t* lock = rwlock_init();
 
 	// Open the commands file in read mode
@@ -42,51 +56,27 @@ int main(void) {
 	// Allocate space for the threads
 	read_line(fp, buffer, LINE_BUFFER_SIZE);
 	temp_line = parse_line(buffer);
-	num_threads = atoi(temp_line->param_one);
+	uint32_t num_threads = atoi(temp_line->param_one);
 	free_parsed_line(temp_line);
 
 	pthread_t* threads = allocate_threads(num_threads);
 
+	// Set arguments needed in the thread function
+	thread_args_t thread_args = {.fp = fp, .hash_table = ht, .lock = lock};
+
 	// Create the threads
 	for(uint32_t i = 0; i < num_threads; i++) {
 
-		
+		pthread_create(&threads[i], NULL, hash_table_thread_function, (void*)&thread_args);
 
 	}
 
-	/*
-	// Loop through each line of the file
-	while(read_line(fp, buffer, LINE_BUFFER_SIZE)) {
-		
-		// Extract the parameters from the line
-		temp_line = parse_line(buffer);
-		
-		// Run the command read from the line
-		if( strcmp(temp_line->command, "insert") == 0 ) {
+	// Wait for threads to finish
+	for(uint32_t i = 0; i < num_threads; i++) {
 
-			insert(ht, HASH_TABLE_SIZE, lock, temp_line->param_one, atoi(temp_line->param_two));
+		pthread_join(threads[i], NULL);
 
-		} else if( strcmp(temp_line->command, "print") == 0 ) {
-
-			print_hash_table_console(ht, HASH_TABLE_SIZE);
-
-		} else if( strcmp(temp_line->command, "delete") == 0 ) {
-
-			delete(ht, HASH_TABLE_SIZE, lock, temp_line->param_one);
-
-		} else if( strcmp(temp_line->command, "search") == 0 ) {
-
-			hash_record_t* find = search(ht, HASH_TABLE_SIZE, lock, temp_line->param_one);
-
-			if(!find) printf("NULL\n");
-			else printf("FOUND: %s\n", find->name);
-
-		}
-
-		free_parsed_line(temp_line);	
-		
 	}
-	*/
 	
 	// Close the commands.txt file, free the lock, free the threads, and free the hash table
 	fclose(fp);
@@ -218,5 +208,30 @@ pthread_t* allocate_threads(size_t num_threads) {
 	}
 
 	return threads;
+
+}
+
+void* hash_table_thread_function(void* args) {
+
+	// Arguments
+	thread_args_t* thread_args = (thread_args_t*)args;
+
+	// Buffers
+	char buffer[LINE_BUFFER_SIZE];
+	Line* temp_line = NULL;
+
+	// Read the current line
+	read_line(thread_args->fp, buffer, LINE_BUFFER_SIZE);
+	temp_line = parse_line(buffer);
+
+	if( !strcmp(temp_line->command, "insert") ) insert(thread_args->hash_table, HASH_TABLE_SIZE, thread_args->lock, temp_line->param_one, atoi(temp_line->param_two));
+	else if( !strcmp(temp_line->command, "delete") ) delete(thread_args->hash_table, HASH_TABLE_SIZE, thread_args->lock, temp_line->param_one);
+	else if( !strcmp(temp_line->command, "search") ) search(thread_args->hash_table, HASH_TABLE_SIZE, thread_args->lock, temp_line->param_one);
+	else if( !strcmp(temp_line->command, "print") ) print_hash_table_console(thread_args->hash_table, HASH_TABLE_SIZE);
+
+	// Free the temp line
+	free_parsed_line(temp_line);
+
+
 
 }
