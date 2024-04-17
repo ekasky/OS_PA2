@@ -1,16 +1,11 @@
-
 # Operating Systems Programming Assignment II
-
-
 
 ## Authors
 
 - [Evan Kasky]
 - [Author II]
 - [Author III]
-- [Author IV]
-
-
+- [Testing]
 
 ## Installation
 
@@ -22,7 +17,7 @@ Install project with git
 
 Open the cloned directory and run make
 
-``` make
+```make
     make
 ```
 
