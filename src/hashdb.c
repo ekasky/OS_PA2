@@ -83,11 +83,13 @@ hash_record_t* create_hash_record(uint32_t hash, char* name, uint32_t salary) {
 
 void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, uint32_t value, FILE* fp) {
 
-    // Aquire the write lock
-    rwlock_acquire_write_lock(lock, fp);
-
     // Compute the hash value
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
+
+    fprintf(fp, "INSERT, %d, %s, %d\n", hash, key, value);
+
+    // Aquire the write lock
+    rwlock_acquire_write_lock(lock, fp);
 
     // Create a reference to the correct bucket corresponsing to the hash
     hash_record_t* bucket_head = hash_table[hash % table_size];
@@ -97,9 +99,7 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
     if(!bucket_head) {
 
         hash_table[hash % table_size] = create_hash_record(hash, key, value);
-        
-        fprintf(fp, "INSERT, %s, %d\n", key, value);
-
+       	
         rwlock_release_write_lock(lock, fp);
 
         return;
@@ -120,6 +120,8 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
 }
 
 void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp) {
+
+    fprintf(fp, "DELETE, %s\n", key);
 
     // Aquire the write lock
     rwlock_acquire_write_lock(lock, fp);
@@ -175,6 +177,8 @@ void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
 
 hash_record_t* search(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp) {
 
+    fprintf(fp, "SEARCH, %s\n", key);
+
     // Aquire the read lock
     rwlock_acquire_read_lock(lock, fp);
 
@@ -207,8 +211,7 @@ hash_record_t* search(hash_record_t** hash_table, size_t table_size, rwlock_t* l
         return NULL;
 
     }
-
-    fprintf(fp, "SEARCH, %s\n", key);
+    
     rwlock_release_read_lock(lock, fp);
 
     return temp;
