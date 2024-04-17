@@ -81,7 +81,7 @@ hash_record_t* create_hash_record(uint32_t hash, char* name, uint32_t salary) {
 
 }
 
-void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, uint32_t value, FILE* fp) {
+void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, uint32_t value, FILE* fp, int* num_acquisitions, int* num_releases) {
 
     // Compute the hash value
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
@@ -89,7 +89,7 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
     fprintf(fp, "INSERT, %d, %s, %d\n", hash, key, value);
 
     // Aquire the write lock
-    rwlock_acquire_write_lock(lock, fp);
+    rwlock_acquire_write_lock(lock, fp, num_acquisitions);
 
     // Create a reference to the correct bucket corresponsing to the hash
     hash_record_t* bucket_head = hash_table[hash % table_size];
@@ -100,7 +100,7 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
 
         hash_table[hash % table_size] = create_hash_record(hash, key, value);
        	
-        rwlock_release_write_lock(lock, fp);
+        rwlock_release_write_lock(lock, fp, num_releases);
 
         return;
 
@@ -113,18 +113,18 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
 
     fprintf(fp, "INSERT, %s, %d\n", key, value);
 
-    rwlock_release_write_lock(lock, fp);
+    rwlock_release_write_lock(lock, fp, num_releases);
 
 
 
 }
 
-void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp) {
+void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp, int* num_acquisitions, int* num_releases) {
 
     fprintf(fp, "DELETE, %s\n", key);
 
     // Aquire the write lock
-    rwlock_acquire_write_lock(lock, fp);
+    rwlock_acquire_write_lock(lock, fp, num_acquisitions);
 
     // Compute the hash
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
@@ -144,7 +144,7 @@ void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
     // Remove the record from the bucket
     if(!temp) {
     
-    	rwlock_release_write_lock(lock, fp);
+    	rwlock_release_write_lock(lock, fp, num_releases);
     	return;
     
     }
@@ -153,7 +153,7 @@ void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
     
     	free(temp);
     	hash_table[hash % table_size] = NULL;
-    	rwlock_release_write_lock(lock, fp);
+    	rwlock_release_write_lock(lock, fp, num_releases);
     	return;
     
     }
@@ -162,7 +162,7 @@ void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
     
     	prev->next = NULL;
     	free(temp);
-    	rwlock_release_write_lock(lock, fp);
+    	rwlock_release_write_lock(lock, fp, num_releases);
     	return;
     
     }
@@ -170,17 +170,17 @@ void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
     prev->next = temp->next;
     temp->next = NULL;
     free(temp);
-    rwlock_release_write_lock(lock, fp);
+    rwlock_release_write_lock(lock, fp, num_releases);
     
 
 }
 
-hash_record_t* search(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp) {
+hash_record_t* search(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp, int* num_acquisitions, int* num_releases) {
 
     fprintf(fp, "SEARCH, %s\n", key);
 
     // Aquire the read lock
-    rwlock_acquire_read_lock(lock, fp);
+    rwlock_acquire_read_lock(lock, fp, num_acquisitions);
 
     // Compute the hash
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
@@ -191,7 +191,7 @@ hash_record_t* search(hash_record_t** hash_table, size_t table_size, rwlock_t* l
     // Find the record in the table
     if(!bucket_head) {
 
-        rwlock_release_read_lock(lock, fp);
+        rwlock_release_read_lock(lock, fp, num_releases);
         return NULL;
 
     }
@@ -207,21 +207,21 @@ hash_record_t* search(hash_record_t** hash_table, size_t table_size, rwlock_t* l
 
     if(!temp) {
 
-        rwlock_release_read_lock(lock, fp);
+        rwlock_release_read_lock(lock, fp, num_releases);
         return NULL;
 
     }
     
-    rwlock_release_read_lock(lock, fp);
+    rwlock_release_read_lock(lock, fp, num_releases);
 
     return temp;
 
 }
 
-void print(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, FILE* fp) {
+void print(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, FILE* fp, int* num_acquisitions, int* num_releases) {
 
     // Aquire the read lock
-    rwlock_acquire_read_lock(lock, fp);
+    rwlock_acquire_read_lock(lock, fp, num_acquisitions);
 
     for(uint32_t i = 0; i < table_size; i++) {
 
@@ -236,6 +236,6 @@ void print(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, FILE* 
 
     }
 
-    rwlock_release_read_lock(lock, fp);
+    rwlock_release_read_lock(lock, fp, num_releases);
 
 }

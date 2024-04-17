@@ -28,7 +28,7 @@ rwlock_t* rwlock_init() {
 
 }
 
-void rwlock_acquire_read_lock(rwlock_t* lock, FILE* fp) {
+void rwlock_acquire_read_lock(rwlock_t* lock, FILE* fp, int* count) {
 
 	Sem_wait(&lock->lock);					// Wait until we have permission to enter the critcal section
 	lock->readers++;						// Increment the number of reader counts by 1
@@ -43,9 +43,11 @@ void rwlock_acquire_read_lock(rwlock_t* lock, FILE* fp) {
 	
 	Sem_post(&lock->lock);					// Release the lock to allow other threads to access crtical section
 
+	*count = *count + 1;
+
 }
 
-void rwlock_release_read_lock(rwlock_t *lock, FILE* fp) {
+void rwlock_release_read_lock(rwlock_t *lock, FILE* fp, int* count) {
 
 	Sem_wait(&lock->lock);					// Wait until we have permission to enter the crtical section
 	lock->readers--;					// Subtract one from the readers count
@@ -60,19 +62,25 @@ void rwlock_release_read_lock(rwlock_t *lock, FILE* fp) {
 	
 	Sem_post(&lock->lock);					// Release the lokc to allow other threads to access critcal section
 
+	*count = *count + 1;
+
 }
 
-void rwlock_acquire_write_lock(rwlock_t* lock, FILE* fp) {
+void rwlock_acquire_write_lock(rwlock_t* lock, FILE* fp, int* count) {
 
 	Sem_wait(&lock->writeLock);				//Wait until we have have aquired the writeLock
 	fprintf(fp, "WRITE LOCK ACQUIRED\n");
 
+	*count = *count + 1;
+
 }
 
-void rwlock_release_write_lock(rwlock_t* lock, FILE* fp) {
+void rwlock_release_write_lock(rwlock_t* lock, FILE* fp, int* count) {
 
 	Sem_post(&lock->writeLock);				// Relase the write lock to allow other threads to accquire it for write
 	fprintf(fp, "WRITE LOCK RELEASED\n");
+
+	*count = *count + 1;
 
 }
 
