@@ -126,55 +126,50 @@ void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
 
     // Compute the hash
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
-
-    // Create a reference to the correct bucket
-    hash_record_t* bucket_head = hash_table[hash % table_size];
-
-    // Remove node from the table
-
-    if(!bucket_head) {
-        
-        rwlock_release_write_lock(lock, fp);
-        return;
-
-    }
-
-    hash_record_t* temp = bucket_head;
+    
+    // Find the record in the bucket
+    hash_record_t* temp = hash_table[hash % table_size];
     hash_record_t* prev = NULL;
-
+    
     while(temp) {
-
-        if( !strcmp(temp->name, key) ) break;
-        prev = temp;
-        temp = temp->next;
-
+    
+    	if( !strcmp(temp->name, key) ) break;
+    	prev = temp;
+    	temp = temp->next;
+    
     }
-
+    
+    // Remove the record from the bucket
     if(!temp) {
-
-        rwlock_release_write_lock(lock, fp);
-        return;
-
+    
+    	rwlock_release_write_lock(lock, fp);
+    	return;
+    
     }
-
+    
+    if(temp == hash_table[hash % table_size]) {
+    
+    	free(temp);
+    	hash_table[hash % table_size] = NULL;
+    	rwlock_release_write_lock(lock, fp);
+    	return;
+    
+    }
+    
     if(!temp->next) {
-
-        free(temp);
-        prev->next = NULL;
-
-        fprintf(fp, "DELETE, %s", key);
-        rwlock_release_write_lock(lock, fp);
-        return;
-
+    
+    	prev->next = NULL;
+    	free(temp);
+    	rwlock_release_write_lock(lock, fp);
+    	return;
+    
     }
-
+    
     prev->next = temp->next;
     temp->next = NULL;
-
     free(temp);
-
-    fprintf(fp, "DELETE, %s", key);
     rwlock_release_write_lock(lock, fp);
+    
 
 }
 
@@ -239,48 +234,5 @@ void print(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, FILE* 
     }
 
     rwlock_release_read_lock(lock, fp);
-
-}
-
-hashRecord** create_hash_table(size_t table_size) {
-
-	hashRecord** ht = (hashRecord**)calloc(table_size, sizeof(hashRecord*));
-	
-	if(!ht) {
-	
-		fprintf(stderr, "[ERROR]: Could not allocate space for hash table\n");
-		exit(1);
-	
-	}
-	
-	for(uint32_t i = 0; i < table_size; i++) {
-	
-		ht[i] = NULL;
-	
-	}
-
-	return ht;
-}
-
-void destroy_hash_table(hashRecord** ht, size_t table_size) {
-
-	if(ht == NULL) return;					// Nothing to do hash table is NULL
-	
-	for(uint32_t i = 0; i < table_size; i++) {
-	
-		hashRecord* temp = ht[i];
-		hashRecord* prev = NULL;
-		
-		while(temp) {
-		
-			prev = temp;
-			temp = temp->next;
-			free(prev);
-		
-		}
-	
-	}
-	
-	free(ht);
 
 }

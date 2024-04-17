@@ -6,15 +6,8 @@
 #include "includes/rwlocks.h"
 #include "includes/hashdb.h"
 
-<<<<<<< HEAD
-#define LINE_BUFFER_SIZE 100
-#define TABLE_SIZE 10
-
-/* Define data structs */
-=======
 #define BUFFER_SIZE 255
 #define HASH_TABLE_SIZE 10
->>>>>>> 1af4bf83a0327e95dfd862bcbe920319ab7a766d
 
 /* Parser */
 
@@ -24,44 +17,6 @@ typedef struct line_t {
     char* param_one;
     char* param_two;
 
-<<<<<<< HEAD
-/* Function Prototypes */
-FILE* open_file();
-int read_line(FILE* fp, char* buffer, size_t bufferSize);
-Line* parse_line(char* buffer);
-void free_parsed_line(Line* line);
-
-int main(void) {
-
-	char buffer[LINE_BUFFER_SIZE];
-	Line* temp_line = NULL;
-	uint32_t num_threads = 0;
-	hashRecord** ht = create_hash_table(TABLE_SIZE);
-
-	// Open the commands file in read mode
-	FILE* fp = open_file();
-	
-	
-	// Loop through each line of the file
-	while(read_line(fp, buffer, LINE_BUFFER_SIZE)) {
-		
-		// Extract the parameters from the line
-		temp_line = parse_line(buffer);
-		
-		// Run the command read from the line
-		if( strcmp(temp_line->command, "threads") == 0 ) {
-			num_threads = atoi(temp_line->param_one);		// Convert the number of threads to a int
-		}
-		
-		// Free The line buffer
-		free_parsed_line(temp_line);	
-		
-	}
-	
-	// Close the commands.txt file and free the hash table memory
-	fclose(fp);
-	destroy_hash_table(ht, TABLE_SIZE);
-=======
 } line_t;
 
 FILE* open_input_file();
@@ -96,7 +51,6 @@ int main(void) {
 
     // Create or open the output.txt file
     FILE* out_fp = open_output_file();
->>>>>>> 1af4bf83a0327e95dfd862bcbe920319ab7a766d
 
     // Create a empty hash table
     hash_record_t** hash_table = create_hash_table(HASH_TABLE_SIZE);
@@ -267,18 +221,7 @@ void free_line(line_t line) {
 
 }
 
-void free_parsed_line(Line* line) {
 
-<<<<<<< HEAD
-	if(!line) return;
-	
-	free(line->command);
-	free(line->param_one);
-	free(line->param_two);
-	free(line);
-
-}
-=======
 pthread_t* allocate_threads(size_t num_threads) {
 
     pthread_t* threads = (pthread_t*)calloc(num_threads, sizeof(pthread_t));
@@ -289,7 +232,6 @@ pthread_t* allocate_threads(size_t num_threads) {
         exit(1);
 
     }
->>>>>>> 1af4bf83a0327e95dfd862bcbe920319ab7a766d
 
     return threads;
 
@@ -321,7 +263,7 @@ void* hash_table_thread_function(void* arg) {
     }
 
     else if( !strcmp(line.command, "delete") ) {
-        //delete(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp);
+        delete(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp);
     }
 
     else if( !strcmp(line.command, "search") ) {
