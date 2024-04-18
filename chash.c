@@ -19,14 +19,15 @@ typedef struct line_t {
 
 } line_t;
 
+
+/* Function Prototyping */
 FILE* open_input_file();
 FILE* open_output_file();
 line_t parse_line(char* buffer);
 void free_line(line_t line);
 void* hash_table_thread_function(void* arg);
 
-/* Threads */
-
+/* Thread Argument Structure to keep track of important variables by reference */
 typedef struct thread_args_t {
 
     hash_record_t** hash_table;
@@ -40,12 +41,9 @@ typedef struct thread_args_t {
 
 // Create mutex lock for file reading -- I used chatGPT to help fix the input reading within the threads (https://chat.openai.com/share/6276eff2-19a2-4f4c-be44-7f00527a9630)
 pthread_mutex_t file_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 pthread_t* allocate_threads(size_t num_threads);
 
-
 /* Entry Point */
-
 int main(void) {
 
     // Open input file for reading
@@ -119,6 +117,7 @@ int main(void) {
     return 0;
 }
 
+/* Opening input file and returning file descriptor */
 FILE* open_input_file() {
 
     FILE* fp = fopen("commands.txt", "r");
@@ -134,6 +133,7 @@ FILE* open_input_file() {
  
 }
 
+/* Opening output file and returning file descriptor */
 FILE* open_output_file() {
 
     FILE* fp = fopen("output.txt", "w");
@@ -149,6 +149,7 @@ FILE* open_output_file() {
 
 }
 
+/* Parsing input file for command and data */
 line_t parse_line(char* buffer) {
 
     line_t line;
@@ -221,6 +222,7 @@ line_t parse_line(char* buffer) {
 
 }
 
+/* Freeing the input lines after use */
 void free_line(line_t line) {
 
     free(line.command);
@@ -229,7 +231,7 @@ void free_line(line_t line) {
 
 }
 
-
+/* Wrapper for allocating each thread in initialization */
 pthread_t* allocate_threads(size_t num_threads) {
 
     pthread_t* threads = (pthread_t*)calloc(num_threads, sizeof(pthread_t));
@@ -245,6 +247,7 @@ pthread_t* allocate_threads(size_t num_threads) {
 
 }
 
+/* Function to be ran by each thread */
 void* hash_table_thread_function(void* arg) {
 
     // Arguments
