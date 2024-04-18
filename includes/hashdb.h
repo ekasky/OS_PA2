@@ -22,6 +22,7 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
 void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp, int* num_acquisitions, int* num_releases);
 hash_record_t* search(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp, int* num_acquisitions, int* num_releases);
 void print(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, FILE* fp, int* num_acquisitions, int* num_releases);
+void console_log_hash_table(hash_record_t** hash_table, size_t table_size, rwlock_t* lock);
 
 #endif
 

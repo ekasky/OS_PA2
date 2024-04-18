@@ -106,12 +106,34 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
 
     }
 
-    hash_record_t* record = create_hash_record(hash, key, value);
-    
-    record->next = bucket_head;
-    hash_table[hash % table_size] = record;
+    hash_record_t* temp = bucket_head;
+    hash_record_t* prev = NULL;
 
-    fprintf(fp, "INSERT, %s, %u\n", key, value);
+    while(temp && temp->hash < hash) {
+        prev = temp;
+        temp = temp->next;
+    }
+
+    hash_record_t* record = create_hash_record(hash, key, value);
+
+    if(!prev) {
+
+        record->next = bucket_head;
+        hash_table[hash % table_size] = record;
+
+    }
+    else if(!prev->next) {
+
+        prev->next = record;
+
+    }
+    else {
+
+        record->next = prev->next;
+        prev->next = record;
+
+    }
+
 
     rwlock_release_write_lock(lock, fp, num_releases);
 
@@ -221,19 +243,107 @@ void print(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, FILE* 
     // Aquire the read lock
     rwlock_acquire_read_lock(lock, fp, num_acquisitions);
 
+    // Create one sorted linked list based on hash values
+    hash_record_t* head = NULL;
+
+    hash_record_t* temp = NULL;
+    hash_record_t* prev = NULL;
+
     for(uint32_t i = 0; i < table_size; i++) {
 
-        hash_record_t* temp = hash_table[i];
+        temp = hash_table[i];
 
         while(temp) {
 
-            fprintf(fp, "%u,%s,%u\n", temp->hash, temp->name, temp->salary);
+            
+            if(!head) {                                 // If the linked list is empty insert to the head
+                head = create_hash_record(temp->hash, temp->name, temp->salary);
+            }
+            else if(temp->hash < head->hash) {          // If the current value going into the list is less than the head hash insert to the front
+
+                hash_record_t* record = create_hash_record(temp->hash, temp->name, temp->salary);
+                record->next = head;
+                head = record;
+
+            }
+            else {
+
+                hash_record_t* record = create_hash_record(temp->hash, temp->name, temp->salary);
+                hash_record_t* current = head;
+                prev = NULL;
+
+                while(current) {
+
+                    if(current->hash < record->hash) {
+                        prev = current;
+                        current = current->next;
+                        continue;
+                    }
+                    else {
+
+                        prev->next = record;
+                        record->next = current;
+                        break;
+
+                    }
+
+                }
+
+                if(!current) {
+                    prev->next = record;
+                }
+
+            }
+
             temp = temp->next;
 
         }
 
     }
 
+    // Print the sorted linked list
+    temp = head;
+
+    while(temp) {
+
+        fprintf(fp, "%u,%s,%u\n", temp->hash, temp->name, temp->salary);
+        temp = temp->next;
+
+    }
+
+    // Destroy linked list created for printing
+    temp = head;
+    prev = NULL;
+
+    while(temp) {
+
+        prev = temp;
+        temp = temp->next;
+        free(prev);
+
+    }
+
+    // Release the read lock
     rwlock_release_read_lock(lock, fp, num_releases);
+
+}
+
+void console_log_hash_table(hash_record_t** hash_table, size_t table_size, rwlock_t* lock) {
+
+    for(uint32_t i = 0; i < table_size; i++) {
+
+        hash_record_t* temp = hash_table[i];
+
+        printf("%d: ", i);
+        while(temp) {
+
+            printf("%u -> ", temp->hash);
+            temp = temp->next;
+
+        }
+
+        printf("\n");
+
+    }
 
 }
