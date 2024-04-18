@@ -31,6 +31,13 @@ uint32_t jenkins_hash(const char* key) {
 	return hash;
 }
 
+int hashmap_index(uint32_t hash) {
+	const uint32_t shift_amount = (sizeof(hash) * 8 - MAPLEN_LOG2);
+	uint32_t mask = (UINT32_C(MAPLEN - 1)) << shift_amount;
+
+	return (hash & mask) >> shift_amount;
+}
+
 Hashmap hashmap_init() {
 	Hashmap map;
 
@@ -45,7 +52,7 @@ Hashmap hashmap_init() {
 // Returns -1 if not found.
 int hashmap_search(Hashmap* hashmap, const char* name, HashRecord* out) {
 	uint32_t hash = jenkins_hash(name);
-	int index = hash % MAPLEN;
+	int index = hashmap_index(hash);
 
 	HashEntry* entry = &hashmap->table[index];
 	rwlock_acquire_readlock(&entry->rwlock);
@@ -68,7 +75,7 @@ int hashmap_search(Hashmap* hashmap, const char* name, HashRecord* out) {
 
 void hashmap_insert(Hashmap* hashmap, const char* name, uint32_t salary) {
 	uint32_t hash = jenkins_hash(name);
-	int index = hash % MAPLEN;
+	int index = hashmap_index(hash);
 
 	HashEntry* entry = &hashmap->table[index];
 	rwlock_acquire_writelock(&entry->rwlock);
@@ -95,7 +102,7 @@ void hashmap_insert(Hashmap* hashmap, const char* name, uint32_t salary) {
 
 void hashmap_delete(Hashmap* hashmap, const char* name) {
 	uint32_t hash = jenkins_hash(name);
-	int index = hash % MAPLEN;
+	int index = hashmap_index(hash);
 
 	HashEntry* entry = &hashmap->table[index];
 	rwlock_acquire_writelock(&entry->rwlock);

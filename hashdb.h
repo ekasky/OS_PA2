@@ -2,7 +2,8 @@
 #include "rwlock.h"
 #include <inttypes.h>
 
-#define MAPLEN 64
+#define MAPLEN_LOG2 4
+#define MAPLEN (1 << MAPLEN_LOG2)
 #define NAMELEN 49
 
 typedef struct HashRecord {
