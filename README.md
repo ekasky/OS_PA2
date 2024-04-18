@@ -6,7 +6,7 @@
 ## Authors
 
 - [Evan Kasky]
-- [Author II]
+- [Anthony Marrongelli]
 - [Author III]
 - [Author IV]
 
