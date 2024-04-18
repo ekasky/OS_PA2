@@ -83,9 +83,9 @@ void hashmap_insert(Hashmap* hashmap, const char* name, uint32_t salary) {
 	HashRecord** last_ptr = &entry->record;
 	HashRecord* record = *last_ptr;
 	while (1) {
-		if (record == NULL) {
+		if (record == NULL || (record != NULL && record->hash > hash)) {
 			HashRecord* new = malloc(sizeof(*new));
-			*new = (HashRecord){.hash = hash, .salary = salary, .next = NULL};
+			*new = (HashRecord){.hash = hash, .salary = salary, .next = record};
 			strncpy(new->name, name, NAMELEN);
 			*last_ptr = new;
 			break;
