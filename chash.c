@@ -23,7 +23,6 @@ typedef enum Op {
 
 typedef struct Command {
 	Hashmap* map;
-	FILE* LOG_OUTPUT;
 	pthread_t tid;
 	Op op;
 	char name[NAMELEN + 1];
@@ -39,11 +38,11 @@ void* thread(void* arg) {
 		break;
 	}
 	case SEARCH: {
-		fprintf(command->LOG_OUTPUT, "SEARCH,%s\n", command->name);
+		fprintf(LOG_OUTPUT, "SEARCH,%s\n", command->name);
 
 		HashRecord record;
 		if (hashmap_search(command->map, command->name, &record) < 0) {
-			fputs("No Record Found\n", command->LOG_OUTPUT);
+			fputs("No Record Found\n", LOG_OUTPUT);
 		} else {
 			record_print(&record);
 		}
@@ -52,7 +51,7 @@ void* thread(void* arg) {
 	}
 	case INSERT: {
 		fprintf(
-			command->LOG_OUTPUT,
+			LOG_OUTPUT,
 			"INSERT,%s,%" PRIu32 "\n",
 			command->name,
 			command->salary
@@ -61,7 +60,7 @@ void* thread(void* arg) {
 		break;
 	}
 	case DELETE: {
-		fprintf(command->LOG_OUTPUT, "DELETE,%s\n", command->name);
+		fprintf(LOG_OUTPUT, "DELETE,%s\n", command->name);
 		hashmap_delete(command->map, command->name);
 		break;
 	}
@@ -87,7 +86,7 @@ int main() {
 
 	Hashmap map = hashmap_init();
 
-	Command base_cmd = {.map = &map, .LOG_OUTPUT = LOG_OUTPUT};
+	Command base_cmd = {.map = &map};
 
 	for (unsigned int i = 0; i < threads; i++) {
 		Command* cmd = &cmds[i];
