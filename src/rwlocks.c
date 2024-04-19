@@ -65,12 +65,11 @@ void rwlock_release_read_lock(rwlock_t *lock, FILE* fp, _Atomic int* count) {
 	/* Subtract one from the readers count */
 	lock->readers--;
 	
-	if(&lock->lock) {
-	
-		/* Release the write lock to allow a writer to accquire write permissions  */
+	/* ChatGPT Modification to function */
+	if(lock->readers == 0) {
 		Sem_post(&lock->writeLock);
-	
 	}
+	/* End of ChatGPT Modification to function */
 
 	fprintf(fp, "READ LOCK RELEASED\n");
 	
