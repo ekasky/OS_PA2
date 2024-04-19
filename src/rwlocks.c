@@ -9,56 +9,96 @@ I also used ChatGPT 3.0-Turbo to help break down each function and understand wh
 
 #include "../includes/rwlocks.h"
 
-void rwlock_init(rwlock_t* lock) {
+/* Initializing the lock */
+rwlock_t* rwlock_init() {
 
-	lock->readers = 0;					// Sets the number of reads currently held in the lock to 0
-	Sem_init(&lock->lock, 1);				// Ensures multiple readers can access critcal section concurrently
-	Sem_init(&lock->writeLock, 1);				// Ensures only one writer can access the crtical session at a time
+	rwlock_t* lock = (rwlock_t*)calloc(1, sizeof(rwlock_t));
+
+	if(!lock) {
+
+		fprintf(stderr, "[ERROR]: Could not allocate space for lock\n");
+		exit(1);
+
+	}
+
+	/* Sets the number of reads currently held in the lock to 0 */
+	lock->readers = 0;						
+	/* Ensures multiple readers can access critcal section concurrently */
+	Sem_init(&lock->lock, 1);
+	/* Ensures only one writer can access the crtical session at a time */
+	Sem_init(&lock->writeLock, 1);
+
+	return lock;
 
 }
 
-void rwlock_acquire_readlock(rwlock_t* lock) {
+/* Function to assign the read lock */
+void rwlock_acquire_read_lock(rwlock_t* lock, FILE* fp, _Atomic int* count) {
 
-	Sem_wait(&lock->lock);					// Wait until we have permission to enter the critcal section
-	lock->readers++;					// Increment the number of reader counts by 1
+	/* Wait until we have permission to enter the critcal section */
+	Sem_wait(&lock->lock);
+	/* Increment the number of reader counts by 1 */
+	lock->readers++;
 	
 	if(lock->readers == 1) {
 	
-		Sem_wait(&lock->writeLock);			// If we are the first reader accquire the write lock to prevent other writers from entering the critcal section while readers are present (Prevent value from changing as a reader is obtaining it)
+		/* If we are the first reader accquire the write lock to prevent other writers from entering the critcal section
+		 while readers are present (Prevent value from changing as a reader is obtaining it )*/
+		Sem_wait(&lock->writeLock);
 	
 	}
+
+	fprintf(fp, "READ LOCK ACQUIRED\n");
 	
-	Sem_post(&lock->lock);					// Release the lock to allow other threads to access crtical section
+	/* Release the lock to allow other threads to access crtical section */
+	Sem_post(&lock->lock);					
+
+	(*count)++;
 
 }
 
-void rwlock_release_readlock(rwlock_t *lock) {
+/* Function to release the reading lock */
+void rwlock_release_read_lock(rwlock_t *lock, FILE* fp, _Atomic int* count) {
 
-	Sem_wait(&lock->lock);					// Wait until we have permission to enter the crtical section
-	lock->readers--;					// Subtract one from the readers count
+	/* Wait until we have permission to enter the crtical section */
+	Sem_wait(&lock->lock);
+	/* Subtract one from the readers count */
+	lock->readers--;
 	
-	if(&lock->lock) {
-	
-		Sem_post(&lock->writeLock);			// Release the write lock to allow a writer to accquire write permissions 
-	
+	/* ChatGPT Modification to function */
+	if(lock->readers == 0) {
+		Sem_post(&lock->writeLock);
 	}
+	/* End of ChatGPT Modification to function */
+
+	fprintf(fp, "READ LOCK RELEASED\n");
 	
-	Sem_post(&lock->lock);					// Release the lokc to allow other threads to access critcal section
+	/* Release the lock to allow other threads to access critcal section */
+	Sem_post(&lock->lock);
+
+	(*count)++;
 
 }
 
-void rwlock_acquire_writelock(rwlock_t* lock) {
+/* Function to assign the writing lock */
+void rwlock_acquire_write_lock(rwlock_t* lock, FILE* fp, _Atomic int* count) {
 
-	Sem_wait(&lock->writeLock);				//Wait until we have have aquired the writeLock
+	/* Wait until we have have aquired the writeLock */
+	Sem_wait(&lock->writeLock);	
+	fprintf(fp, "WRITE LOCK ACQUIRED\n");
+
+	(*count)++;
 
 }
 
-void rwlock_release_writelock(rwlock_t* lock) {
+/* Function to release the writing lock */
+void rwlock_release_write_lock(rwlock_t* lock, FILE* fp, _Atomic int* count) {
 
-	Sem_post(&lock->writeLock);				// Relase the write lock to allow other threads to accquire it for write
+	/* Relase the write lock to allow other threads to accquire it for write */
+	Sem_post(&lock->writeLock);
+	fprintf(fp, "WRITE LOCK RELEASED\n");
+
+	(*count)++;
 
 }
-
-
-
 

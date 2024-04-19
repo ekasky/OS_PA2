@@ -16,4 +16,6 @@
 # Executable Files
 *.exe
 *.out
+chash
 
+*.txt
