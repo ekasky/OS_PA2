@@ -350,24 +350,3 @@ void print(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, FILE* 
     rwlock_release_read_lock(lock, fp, num_releases);
 
 }
-
-/* Helper function used to debug program */
-void console_log_hash_table(hash_record_t** hash_table, size_t table_size, rwlock_t* lock) {
-
-    for(uint32_t i = 0; i < table_size; i++) {
-
-        hash_record_t* temp = hash_table[i];
-
-        printf("%d: ", i);
-        while(temp) {
-
-            printf("%u -> ", temp->hash);
-            temp = temp->next;
-
-        }
-
-        printf("\n");
-
-    }
-
-}

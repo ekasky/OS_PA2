@@ -149,7 +149,8 @@ line_t parse_line(char* buffer) {
     line_t line;
 
     // Get the command parameter
-    char* token = strtok(buffer, ",");
+    char* ptr;
+    char* token = strtok_r(buffer, ",", &ptr);
 
     if(!token) {
 
@@ -161,7 +162,7 @@ line_t parse_line(char* buffer) {
     strcpy(line.command, token);
 
     // Get the parameter one
-    token = strtok(NULL, ",");
+    token = strtok_r(NULL, ",", &ptr);
 
     if(!token) {
 
@@ -173,7 +174,7 @@ line_t parse_line(char* buffer) {
     strcpy(line.param_one, token);
 
     // Get the parameter two
-    token = strtok(NULL, ",");
+    token = strtok_r(NULL, ",", &ptr);
 
     if(!token) {
 
@@ -243,7 +244,7 @@ void* hash_table_thread_function(void* arg) {
     else if( !strcmp(line.command, "print") ) {
         print(args->hash_table, HASH_TABLE_SIZE, args->lock, args->out_fp, &args->num_acquisitions, &args->num_releases);
     }
-    
+
     return NULL;
 
 }
