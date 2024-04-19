@@ -29,5 +29,5 @@ Open the cloned directory and run make
 To run the project run the following from the root of the project directory
 
 ```
-    out/chash.out
+    ./chash
 ```

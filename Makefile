@@ -6,14 +6,13 @@ CFLAGS = -Wall -Wextra -I$(INCLUDE_DIR) -pthread -fsanitize=thread
 SRC_DIR = src
 INCLUDE_DIR = includes
 BIN_DIR = bin
-OUT_DIR = out
 
 # Source Files
 SRCS = ${wildcard *.c} ${wildcard ${SRC_DIR}/*.c}		# Grabs the main entry point from root and all *.c from src/ dir
 OBJS = $(patsubst %.c,$(BIN_DIR)/%.o,$(notdir $(SRCS)))
 
 # Executable
-EXE = ${OUT_DIR}/chash.out
+EXE = chash
 
 .PHONY: all clean
 
@@ -38,4 +37,4 @@ $(OUT_DIR):
 	
 clean:
 	rm -rf $(BIN_DIR)/*.o
-	rm -rf $(OUT_DIR)/*.out
+	rm -rf *.out output.txt
