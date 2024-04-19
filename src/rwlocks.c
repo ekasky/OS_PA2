@@ -33,7 +33,7 @@ rwlock_t* rwlock_init() {
 }
 
 /* Function to assign the read lock */
-void rwlock_acquire_read_lock(rwlock_t* lock, FILE* fp, int* count) {
+void rwlock_acquire_read_lock(rwlock_t* lock, FILE* fp, _Atomic int* count) {
 
 	/* Wait until we have permission to enter the critcal section */
 	Sem_wait(&lock->lock);
@@ -53,12 +53,12 @@ void rwlock_acquire_read_lock(rwlock_t* lock, FILE* fp, int* count) {
 	/* Release the lock to allow other threads to access crtical section */
 	Sem_post(&lock->lock);					
 
-	*count = *count + 1;
+	(*count)++;
 
 }
 
 /* Function to release the reading lock */
-void rwlock_release_read_lock(rwlock_t *lock, FILE* fp, int* count) {
+void rwlock_release_read_lock(rwlock_t *lock, FILE* fp, _Atomic int* count) {
 
 	/* Wait until we have permission to enter the crtical section */
 	Sem_wait(&lock->lock);
@@ -77,29 +77,29 @@ void rwlock_release_read_lock(rwlock_t *lock, FILE* fp, int* count) {
 	/* Release the lock to allow other threads to access critcal section */
 	Sem_post(&lock->lock);
 
-	*count = *count + 1;
+	(*count)++;
 
 }
 
 /* Function to assign the writing lock */
-void rwlock_acquire_write_lock(rwlock_t* lock, FILE* fp, int* count) {
+void rwlock_acquire_write_lock(rwlock_t* lock, FILE* fp, _Atomic int* count) {
 
 	/* Wait until we have have aquired the writeLock */
 	Sem_wait(&lock->writeLock);	
 	fprintf(fp, "WRITE LOCK ACQUIRED\n");
 
-	*count = *count + 1;
+	(*count)++;
 
 }
 
 /* Function to release the writing lock */
-void rwlock_release_write_lock(rwlock_t* lock, FILE* fp, int* count) {
+void rwlock_release_write_lock(rwlock_t* lock, FILE* fp, _Atomic int* count) {
 
 	/* Relase the write lock to allow other threads to accquire it for write */
 	Sem_post(&lock->writeLock);
 	fprintf(fp, "WRITE LOCK RELEASED\n");
 
-	*count = *count + 1;
+	(*count)++;
 
 }
 

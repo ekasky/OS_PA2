@@ -92,7 +92,7 @@ hash_record_t* create_hash_record(uint32_t hash, char* name, uint32_t salary) {
 }
 
 /* Insertion into hash map function */
-void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, uint32_t value, FILE* fp, int* num_acquisitions, int* num_releases) {
+void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, uint32_t value, FILE* fp, _Atomic int* num_acquisitions, _Atomic int* num_releases) {
 
     /* Compute the hash value */
     uint32_t hash = jenkins_one_at_a_time_hash(key, strlen(key));
@@ -152,7 +152,7 @@ void insert(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
 }
 
 /* Deletion from hash map function */
-void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp, int* num_acquisitions, int* num_releases) {
+void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp, _Atomic int* num_acquisitions, _Atomic int* num_releases) {
 
     fprintf(fp, "DELETE, %s\n", key);
 
@@ -211,7 +211,7 @@ void delete(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char*
 }
 
 /* Searching for record in hashmap function */
-hash_record_t* search(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp, int* num_acquisitions, int* num_releases) {
+hash_record_t* search(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, char* key, FILE* fp, _Atomic int* num_acquisitions, _Atomic int* num_releases) {
 
     fprintf(fp, "SEARCH, %s\n", key);
 
@@ -258,7 +258,7 @@ hash_record_t* search(hash_record_t** hash_table, size_t table_size, rwlock_t* l
 }
 
 /* Function to print the hashmap */
-void print(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, FILE* fp, int* num_acquisitions, int* num_releases) {
+void print(hash_record_t** hash_table, size_t table_size, rwlock_t* lock, FILE* fp, _Atomic int* num_acquisitions, _Atomic int* num_releases) {
 
     /* Aquire the read lock */
     rwlock_acquire_read_lock(lock, fp, num_acquisitions);

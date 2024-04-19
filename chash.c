@@ -34,8 +34,8 @@ typedef struct thread_args_t {
     rwlock_t* lock;
     FILE* in_fp;
     FILE* out_fp;
-    int* num_acquisitions;
-    int* num_releases;
+    _Atomic int num_acquisitions;
+    _Atomic int num_releases;
 
 } thread_args_t;
 
@@ -69,12 +69,8 @@ int main(void) {
     // Create hash table lock to protect reads and writes
     rwlock_t* lock = rwlock_init();
 
-    // Create a variable to store the number of lock acquisitions and releases
-    int num_acquisitions = 0;
-    int num_releases = 0;
-
     // Create thread args needed to run
-    thread_args_t thread_args = {.hash_table = hash_table, .in_fp = in_fp, .out_fp = out_fp, .lock = lock, .num_acquisitions = &num_acquisitions, .num_releases = &num_releases};
+    thread_args_t thread_args = {.hash_table = hash_table, .in_fp = in_fp, .out_fp = out_fp, .lock = lock};
 
     // Allocate space for the pthreads
     pthread_t* threads = allocate_threads(num_threads);
@@ -95,9 +91,9 @@ int main(void) {
 
     // Print the counts and final table
     fprintf(out_fp, "\n");
-    fprintf(out_fp, "Number of lock acquisitions: %d\n", num_acquisitions);
-    fprintf(out_fp, "Number of lock releases: %d\n", num_releases);
-    print(hash_table, HASH_TABLE_SIZE, lock, out_fp, &num_acquisitions, &num_releases);
+    fprintf(out_fp, "Number of lock acquisitions: %d\n", thread_args.num_acquisitions);
+    fprintf(out_fp, "Number of lock releases: %d\n", thread_args.num_releases);
+    print(hash_table, HASH_TABLE_SIZE, lock, out_fp, &thread_args.num_acquisitions, &thread_args.num_releases);
 
     // Close the input file
     fclose(in_fp);
@@ -270,19 +266,19 @@ void* hash_table_thread_function(void* arg) {
     // Perform correct operation
 
     if( !strcmp(line.command, "insert") ) {
-        insert(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, atoi(line.param_two), args->out_fp, args->num_acquisitions, args->num_releases);
+        insert(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, atoi(line.param_two), args->out_fp, &args->num_acquisitions, &args->num_releases);
     }
 
     else if( !strcmp(line.command, "delete") ) {
-        delete(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp, args->num_acquisitions, args->num_releases);
+        delete(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp, &args->num_acquisitions, &args->num_releases);
     }
 
     else if( !strcmp(line.command, "search") ) {
-        search(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp, args->num_acquisitions, args->num_releases);
+        search(args->hash_table, HASH_TABLE_SIZE, args->lock, line.param_one, args->out_fp, &args->num_acquisitions, &args->num_releases);
     }
 
     else if( !strcmp(line.command, "print") ) {
-        print(args->hash_table, HASH_TABLE_SIZE, args->lock, args->out_fp, args->num_acquisitions, args->num_releases);
+        print(args->hash_table, HASH_TABLE_SIZE, args->lock, args->out_fp, &args->num_acquisitions, &args->num_releases);
     }
 
     // Free line buffer
