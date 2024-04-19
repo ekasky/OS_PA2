@@ -7,7 +7,7 @@
 
 - [Evan Kasky]
 - [Anthony Marrongelli]
-- [Author III]
+- [Natalya McKay]
 - [Karsten McClard]
 
 
