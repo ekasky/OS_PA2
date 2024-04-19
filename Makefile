@@ -1,8 +1,7 @@
 # I used the following link to write this makefile "https://www.gnu.org/software/make/manual/html_node/index.html#SEC_Contents" along with ChatGPT to write this Makefile
 
 CC = gcc
-CFLAGS = -Wall -Wextra -I$(INCLUDE_DIR) -pthread
-
+CFLAGS = -Wall -Wextra -I$(INCLUDE_DIR) -pthread -fsanitize=thread
 # Directories
 SRC_DIR = src
 INCLUDE_DIR = includes

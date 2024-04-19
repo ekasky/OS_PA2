@@ -13,9 +13,9 @@
 
 typedef struct line_t {
 
-    char* command;
-    char* param_one;
-    char* param_two;
+    char command[50];
+    char param_one[50];
+    char param_two[50];
 
 } line_t;
 
@@ -24,7 +24,6 @@ typedef struct line_t {
 FILE* open_input_file();
 FILE* open_output_file();
 line_t parse_line(char* buffer);
-void free_line(line_t line);
 void* hash_table_thread_function(void* arg);
 
 /* Thread Argument Structure to keep track of important variables by reference */
@@ -62,7 +61,6 @@ int main(void) {
     fgets(buffer, BUFFER_SIZE, in_fp);
     line_t line = parse_line(buffer);
     uint32_t num_threads = atoi(line.param_one);
-    free_line(line);
     
     fprintf(out_fp, "Running %d threads\n", num_threads);
 
@@ -160,15 +158,6 @@ line_t parse_line(char* buffer) {
 
     }
 
-    line.command = (char*)calloc(strlen(token), sizeof(char));
-
-    if(!line.command) {
-
-        fprintf(stderr, "[ERROR]: Could not allocate space for command\n");
-        exit(1);
-
-    }
-
     strcpy(line.command, token);
 
     // Get the parameter one
@@ -177,15 +166,6 @@ line_t parse_line(char* buffer) {
     if(!token) {
 
         fprintf(stderr, "[ERROR]: Failed to tokenize input\n");
-        exit(1);
-
-    }
-    
-    line.param_one = (char*)calloc(strlen(token), sizeof(char));
-
-    if(!line.param_one) {
-
-        fprintf(stderr, "[ERROR]: Could not allocate space for param_one\n");
         exit(1);
 
     }
@@ -201,15 +181,6 @@ line_t parse_line(char* buffer) {
         exit(1);
 
     }
-    
-    line.param_two = (char*)calloc(strlen(token), sizeof(char));
-
-    if(!line.param_two) {
-
-        fprintf(stderr, "[ERROR]: Could not allocate space for param_two\n");
-        exit(1);
-
-    }
 
     strcpy(line.param_two, token);
 
@@ -218,14 +189,6 @@ line_t parse_line(char* buffer) {
 
 }
 
-/* Freeing the input lines after use */
-void free_line(line_t line) {
-
-    free(line.command);
-    free(line.param_one);
-    free(line.param_two);
-
-}
 
 /* Wrapper for allocating each thread in initialization */
 pthread_t* allocate_threads(size_t num_threads) {
@@ -280,10 +243,7 @@ void* hash_table_thread_function(void* arg) {
     else if( !strcmp(line.command, "print") ) {
         print(args->hash_table, HASH_TABLE_SIZE, args->lock, args->out_fp, &args->num_acquisitions, &args->num_releases);
     }
-
-    // Free line buffer
-    free_line(line);
-
+    
     return NULL;
 
 }
